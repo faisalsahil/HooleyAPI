@@ -20,7 +20,7 @@ set :linked_files, fetch(:linked_files, []).push('config/database.yml',
                                                  'config/schedule.rb',
                                                  'config/environments/development.rb',
                                                  'config/environments/staging.rb',
-                                                 'config/environments/production.rb.copy',
+                                                 'config/environments/production.rb',
                                                  'config/environments/test.rb')
 
 # Default value for linked_dirs is []
