@@ -32,7 +32,7 @@ set :linked_dirs, fetch(:linked_dirs, []).push('log',
                                                'public/system')
 
 set :rvm_type, :user
-set :rvm_ruby_version, '2.3.1@jockwithmeapi'
+set :rvm_ruby_version, '2.3.1@hooleyapi'
 
 set :bundle_gemfile, -> { release_path.join('Gemfile') }
 set :bundle_path, nil
