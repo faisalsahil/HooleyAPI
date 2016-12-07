@@ -6,7 +6,7 @@ def load_seeds(datatype)
 end
 
 namespace :data do
-  DATA_SEED_FILES = ['admin', 'countries']
+  DATA_SEED_FILES = ['countries']
 
   desc 'Seed Default Data'
 
