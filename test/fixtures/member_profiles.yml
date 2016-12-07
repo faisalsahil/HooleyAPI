@@ -1,0 +1,40 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  about: MyText
+  phone: MyString
+  photo: MyString
+  country_id: 1
+  state: MyString
+  is_profile_public: false
+
+two:
+  about: MyText
+  phone: MyString
+  photo: MyString
+  country_id: 1
+  state: MyString
+  is_profile_public: false
+
+# == Schema Information
+#
+# Table name: member_profiles
+#
+#  id                :integer          not null, primary key
+#  photo             :string           default("http://bit.ly/25CCXzq")
+#  country_id        :integer
+#  school_name       :string
+#  is_profile_public :boolean
+#  default_group_id  :integer
+#  gender            :string
+#  dob               :string
+#  promotion_updates :boolean          default(FALSE)
+#  state_id          :integer
+#  city_id           :integer
+#  created_at        :datetime         not null
+#  updated_at        :datetime         not null
+#  sport_id          :integer
+#  sport_position_id :integer
+#  sport_level_id    :integer
+#  account_type      :string
+#

@@ -1,0 +1,29 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  about: MyText
+  phone: MyString
+  country_id: 1
+  state: MyString
+  photo: MyString
+
+two:
+  about: MyText
+  phone: MyString
+  country_id: 1
+  state: MyString
+  photo: MyString
+
+# == Schema Information
+#
+# Table name: admin_profiles
+#
+#  id         :integer          not null, primary key
+#  about      :text
+#  phone      :string
+#  country_id :integer
+#  state      :string
+#  photo      :string
+#  created_at :datetime         not null
+#  updated_at :datetime         not null
+#

@@ -1,0 +1,7 @@
+server '23.92.19.41', user: 'live', roles: %w{app db web}
+
+set :application, 'HooleyAPI'
+
+set :deploy_to, '/home/live/HooleyAPI'
+
+set :repo_url, 'git@gitrepos.com:rubyonrails/Hooley.git'

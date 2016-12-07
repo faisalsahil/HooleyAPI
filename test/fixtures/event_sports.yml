@@ -1,0 +1,23 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  event_id: 1
+  sport_id: 1
+  sport_position_id: 1
+
+two:
+  event_id: 1
+  sport_id: 1
+  sport_position_id: 1
+
+# == Schema Information
+#
+# Table name: event_sports
+#
+#  id                :integer          not null, primary key
+#  event_id          :integer
+#  sport_id          :integer
+#  sport_position_id :integer
+#  created_at        :datetime         not null
+#  updated_at        :datetime         not null
+#

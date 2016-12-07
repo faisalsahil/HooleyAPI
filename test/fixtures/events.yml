@@ -1,0 +1,58 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  name: MyString
+  country_id: 1
+  state: MyString
+  city: MyString
+  organization: MyText
+  location: MyText
+  description: MyText
+  cost: 1
+  currency: MyString
+  camp_website: MyText
+  start_date: 2016-08-17 14:03:52
+  end_date: 2016-08-17 14:03:52
+  upload: MyString
+  sport: MyString
+  position: MyString
+
+two:
+  name: MyString
+  country_id: 1
+  state: MyString
+  city: MyString
+  organization: MyText
+  location: MyText
+  description: MyText
+  cost: 1
+  currency: MyString
+  camp_website: MyText
+  start_date: 2016-08-17 14:03:52
+  end_date: 2016-08-17 14:03:52
+  upload: MyString
+  sport: MyString
+  position: MyString
+
+# == Schema Information
+#
+# Table name: events
+#
+#  id                :integer          not null, primary key
+#  name              :string
+#  country_id        :integer
+#  state_id          :integer
+#  city_id           :integer
+#  organization      :text
+#  location          :text
+#  description       :text
+#  cost              :integer
+#  currency_id       :integer
+#  camp_website      :text
+#  start_date        :datetime
+#  end_date          :datetime
+#  upload            :string
+#  member_profile_id :integer
+#  created_at        :datetime         not null
+#  updated_at        :datetime         not null
+#

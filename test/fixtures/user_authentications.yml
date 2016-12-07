@@ -1,0 +1,26 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  user_id: 1
+  social_site_id: MyString
+  social_site: MyString
+  profile_image_url: MyString
+
+two:
+  user_id: 1
+  social_site_id: MyString
+  social_site: MyString
+  profile_image_url: MyString
+
+# == Schema Information
+#
+# Table name: user_authentications
+#
+#  id                :integer          not null, primary key
+#  user_id           :integer
+#  social_site_id    :string
+#  social_site       :string
+#  profile_image_url :string
+#  created_at        :datetime         not null
+#  updated_at        :datetime         not null
+#

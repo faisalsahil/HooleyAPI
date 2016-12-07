@@ -1,0 +1,30 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  user_id: 1
+  device_type: MyString
+  device_uuid: MyString
+  auth_token: MyString
+  session_status: MyString
+
+two:
+  user_id: 1
+  device_type: MyString
+  device_uuid: MyString
+  auth_token: MyString
+  session_status: MyString
+
+# == Schema Information
+#
+# Table name: user_sessions
+#
+#  id             :integer          not null, primary key
+#  user_id        :integer
+#  device_type    :string
+#  device_uuid    :string
+#  auth_token     :string
+#  session_status :string
+#  created_at     :datetime         not null
+#  updated_at     :datetime         not null
+#  device_token   :string
+#

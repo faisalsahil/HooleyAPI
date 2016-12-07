@@ -1,0 +1,23 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  post_id: 1
+  member_profile_id: 1
+  comment: MyText
+
+two:
+  post_id: 1
+  member_profile_id: 1
+  comment: MyText
+
+# == Schema Information
+#
+# Table name: report_posts
+#
+#  id                :integer          not null, primary key
+#  post_id           :integer
+#  member_profile_id :integer
+#  comment           :text
+#  created_at        :datetime         not null
+#  updated_at        :datetime         not null
+#

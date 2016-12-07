@@ -1,0 +1,23 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  user_id: 1
+  sport_abbreviation_id: 1
+  value: MyString
+
+two:
+  user_id: 1
+  sport_abbreviation_id: 1
+  value: MyString
+
+# == Schema Information
+#
+# Table name: user_sport_abbreviations
+#
+#  id                    :integer          not null, primary key
+#  member_profile_id     :integer
+#  sport_abbreviation_id :integer
+#  value                 :string
+#  created_at            :datetime         not null
+#  updated_at            :datetime         not null
+#

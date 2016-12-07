@@ -1,0 +1,8 @@
+setting: &setting
+  adapter: redis
+  url: redis://localhost:6379
+
+development: *setting
+staging: *setting
+production: *setting
+test: *setting

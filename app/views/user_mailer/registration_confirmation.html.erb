@@ -1,0 +1,11 @@
+Welcome to Fusseo.com, <%= @email %><br/>
+===============================================
+<br/><br/>
+Please verify your account by clicking on the following link<br/>
+
+<br/>
+<br/>
+<%= link_to "Confirm you registration", "http://localhost:3000//users/activation?authentication_token=#{@token}" %>
+
+<br/><br/>
+Thanks for joining and have a great

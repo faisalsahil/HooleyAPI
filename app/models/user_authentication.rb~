@@ -1,0 +1,21 @@
+class UserAuthentication < ApplicationRecord
+  belongs_to :user
+
+  def self.find_from_social_data hash
+    find_by_social_site_and_social_site_id(hash[:social_site], hash[:social_site_id])
+  end
+
+  def self.create_from_social_data(hash, profile_type, user = nil)
+
+    if profile_type == AppConstants::MEMBER
+      user ||= MemberProfile.create_from_omniauth_data(hash)
+    end
+
+    UserAuthentication.create(
+        user_id:       user.id,
+        uid:           hash['uid'],
+        provider:      hash['provider'],
+        omniauth_data: hash.to_json
+    )
+  end
+end

@@ -1,0 +1,26 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  x_coordinate: 1.5
+  y_coordinate: 1.5
+  post_id: 1
+  member_profile_id: 1
+
+two:
+  x_coordinate: 1.5
+  y_coordinate: 1.5
+  post_id: 1
+  member_profile_id: 1
+
+# == Schema Information
+#
+# Table name: post_photo_users
+#
+#  id                 :integer          not null, primary key
+#  x_coordinate       :float
+#  y_coordinate       :float
+#  member_profile_id  :integer
+#  created_at         :datetime         not null
+#  updated_at         :datetime         not null
+#  post_attachment_id :integer
+#
