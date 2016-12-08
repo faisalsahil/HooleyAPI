@@ -269,92 +269,6 @@ class MemberProfile < ApplicationRecord
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
   end
 
-  # def self.other_member_profile(data, current_user)
-  #   begin
-  #     data = data.with_indifferent_access
-  #     profile = MemberProfile.find_by_id(data[:member_profile][:id])
-  #
-  #     if profile && profile.is_profile_public.present?
-  #       resp_data = other_member_profile_public_response(profile, current_user)
-  #       resp_message = 'Public Profile'
-  #     else
-  #       resp_data = profile.other_member_profile_private_response
-  #       resp_message = 'Private Profile'
-  #     end
-  #     resp_status = 1
-  #     resp_errors = ''
-  #   rescue Exception => e
-  #     resp_data = ''
-  #     resp_status = 0
-  #     paging_data = ''
-  #     resp_message = 'error'
-  #     resp_errors = e
-  #   end
-  #
-  #   resp_request_id = data[:request_id]
-  #   JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
-  # end
-  #
-  # def other_member_profile_private_response
-  #   member_profile = self.as_json(
-  #       only: [:id, :about, :photo, :country_id, :gender, :height, :weight, :school],
-  #       methods: [:posts_count, :followers_count, :followings_count],
-  #       include: {
-  #           user: {
-  #               only: [:id, :first_name, :last_name, :email],
-  #               include: {
-  #                   role: {
-  #                       only: [:id, :name]
-  #                   }
-  #               }
-  #           },
-  #           country: {
-  #               only: [:id, :country_name]
-  #           }
-  #       }
-  #
-  #   )
-  #   {member_profile: member_profile}.as_json
-  # end
-  #
-  # def self.other_member_profile_public_response(profile, current_user)
-  #   @@current_profile = current_user.profile
-  #   member_profile = profile.as_json(
-  #       only: [:id, :about, :phone, :photo, :cover, :country_id, :is_profile_public, :gender, :dob, :height, :weight, :school],
-  #       methods: [:posts_count, :followers_count, :followings_count, :is_im_following, :is_my_follower],
-  #       include: {
-  #           user: {
-  #               only: [:id, :first_name, :last_name, :email],
-  #               include: {
-  #                   role: {
-  #                       only: [:id, :name]
-  #                   }
-  #               }
-  #           },
-  #           country: {
-  #               only: [:id, :country_name]
-  #           }
-  #       }
-  #   )
-  #   member_followings = profile.member_followings.where(following_status: ACCEPTED, is_deleted: false)
-  #   member_followings = member_followings.order("updated_at DESC")
-  #   member_followings = member_followings.limit(@@limit)
-  #   member_followings = MemberFollowing.member_followings_response(member_followings, current_user, profile, MEMBER_FOLLOWINGS, false)
-  #
-  #   posts = profile.posts.where(is_post_public: true, is_deleted: false)
-  #   posts = posts.order("updated_at DESC")
-  #   posts = posts.limit(@@limit)
-  #   posts = Post.other_member_profile_posts_response(posts, profile)
-  #
-  #   member_followers = MemberFollowing.where(following_profile_id: profile.id, following_status: ACCEPTED, is_deleted: false)
-  #   member_followers = member_followers.order("updated_at DESC")
-  #   member_followers = member_followers.limit(@@limit)
-  #   member_followers = MemberFollowing.member_followings_response(member_followers, current_user, profile, MEMBER_FOLLOWERS, false)
-  #
-  #
-  #   {member_profile: member_profile, posts: posts, member_followings: member_followings, member_followers: member_followers}.as_json
-  # end
-
   def self.get_profile(data, current_user)
     begin
       data          = data.with_indifferent_access
@@ -866,53 +780,7 @@ class MemberProfile < ApplicationRecord
 
     {"#{type}": records}.as_json
   end
-
-  # def self.filters_data(data, current_user)
-  #   data   = data.with_indifferent_access
-  #   # Sports data
-  #   sports = Sport.all
-  #   sports = sports.as_json(
-  #       only:[:id, :name],
-  #       include:{
-  #           sport_positions:{
-  #               only:[:id, :name]
-  #           }
-  #       }
-  #   )
-  #
-  #   # Sports Level
-  #   sports_level = SportLevel.all
-  #
-  #   # Schools data
-  #   schools = MemberProfile.pluck(:school).compact
-  #   schools = schools.map!(&:downcase).uniq
-  #
-  #
-  #   # Country data
-  #   countries = Country.all
-  #   countries = countries.as_json(
-  #       only:[:id, :country_name, :iso, :iso2],
-  #       include:{
-  #           cities: {
-  #               only: [:id, :name]
-  #           },
-  #           states: {
-  #               only:[:id, :name]
-  #           }
-  #       }
-  #   )
-  #
-  #   # currencies data
-  #   currencies = Currency.all
-  #
-  #   resp_data       = {sports: sports, schools: schools, countries: countries, currencies: currencies, sports_level: sports_level}.as_json
-  #   resp_status     = 1
-  #   resp_message    = 'success'
-  #   resp_errors     = ''
-  #   resp_request_id = data[:request_id]
-  #   JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
-  # end
-
+  
 end
 
 

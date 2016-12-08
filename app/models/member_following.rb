@@ -382,121 +382,6 @@ class MemberFollowing < ApplicationRecord
       response
     end
   end
-
-  def self.member_followings_response_new(member_followings, current_user, searched_profile,root, root_status=nil)
-    response = []
-    if root && root == AppConstants::MEMBER_FOLLOWINGS
-      profile = MemberProfile.find_by_id(member_following.following_profile_id)
-      member_followings = member_followings.as_json(
-              
-      )
-    else
-      profile = member_following.member_profile
-    end
-    
-    member_followings.each do |member_following|
-      if root && root == AppConstants::MEMBER_FOLLOWINGS
-        profile = MemberProfile.find_by_id(member_following.following_profile_id)
-      else
-        profile = member_following.member_profile
-      end
-      user              = profile.user
-      country           = profile.country
-      # member_following =  MemberFollowing.where(following_status: ACCEPTED, member_profile_id: current_user.profile.id, following_profile_id: profile.id)
-      is_current_user_following =  MemberFollowing.find_by_member_profile_id_and_following_profile_id_and_following_status_and_is_deleted(current_user.profile_id, profile.id, AppConstants::ACCEPTED,false)
-      is_current_user_follower  =  MemberFollowing.find_by_member_profile_id_and_following_profile_id_and_following_status_and_is_deleted(profile.id, current_user.profile_id, AppConstants::ACCEPTED,false)
-    
-      response << {
-          id:                   member_following.id,
-          member_profile_id:    member_following.member_profile_id,
-          following_profile_id: member_following.following_profile_id,
-          following_status:     member_following.following_status,
-          created_at:           member_following.created_at,
-          updated_at:           member_following.updated_at,
-          member_profile:{
-              id:               profile.id,
-              photo:            profile.photo,
-              gender:           profile.gender,
-              dob:              profile.dob,
-              is_im_following:  is_current_user_following ? true : false,
-              is_my_follower:   is_current_user_follower  ? true : false,
-              country: {
-                  id:           country.try(:id),
-                  country_name: country.try(:country_name)
-              },
-              user:{
-                  id:           user.id,
-                  first_name:   user.first_name,
-                  last_name:    user.last_name,
-                  email:        user.email,
-                  role: {
-                      id:     user.role_id,
-                      name:   user.role.name
-                  }
-              }
-          }
-      }
-  
-    end
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    is_current_user_following =  MemberFollowing.find_by_member_profile_id_and_following_profile_id_and_following_status_and_is_deleted(current_user.profile.id, searched_profile.id, ACCEPTED,false)
-    is_current_user_follower  =  MemberFollowing.find_by_member_profile_id_and_following_profile_id_and_following_status_and_is_deleted(searched_profile.id, current_user.profile.id, ACCEPTED,false)
-    profile = {
-        id:               searched_profile.id,
-        photo:            searched_profile.photo,
-        gender:           searched_profile.gender,
-        dob:              searched_profile.dob,
-        is_im_following:  is_current_user_following ? true : false,
-        is_my_follower:   is_current_user_follower  ? true : false,
-        country: {
-            id:           searched_profile.country.try(:id),
-            country_name: searched_profile.country.try(:country_name)
-        },
-        user:{
-            id:            searched_profile.user.id,
-            first_name:    searched_profile.user.first_name,
-            last_name:     searched_profile.user.last_name,
-            email:         searched_profile.user.email,
-            role: {
-                id:     searched_profile.user.role_id,
-                name:   searched_profile.user.role.name
-            }
-        }
-    }
-    if root_status.present?
-      {"#{root}": response, member_profile: profile}.as_json
-    else
-      response
-    end
-  end
   
   def self.send_notification(data)
     user_to_following = MemberProfile.find(data).user
@@ -520,14 +405,14 @@ class MemberFollowing < ApplicationRecord
 
     profile = current_user.profile
 
-    member_followings  = MemberFollowing.where(following_profile_id: profile.id, following_status: PENDING)
+    member_followings  = MemberFollowing.where(following_profile_id: profile.id, following_status: AppConstants::PENDING)
     # member_followings  = profile.member_followings.where(following_status: PENDING)
 
     if member_followings.present?
       member_followings = member_followings.page(page.to_i).per_page(per_page.to_i)
       paging_data       = JsonBuilder.get_paging_data(page, per_page, member_followings)
 
-      resp_data       = member_followings_response(member_followings, current_user, profile, MEMBER_FOLLOWINGS, true)
+      resp_data       = member_followings_response(member_followings, current_user, profile, AppConstants::MEMBER_FOLLOWINGS, true)
       resp_status     = 1
       resp_message    = 'success'
       resp_errors     = ''
