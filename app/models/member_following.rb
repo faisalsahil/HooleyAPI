@@ -317,8 +317,8 @@ class MemberFollowing < ApplicationRecord
        user              = profile.user
        country           = profile.country
        # member_following =  MemberFollowing.where(following_status: ACCEPTED, member_profile_id: current_user.profile.id, following_profile_id: profile.id)
-       is_current_user_following =  MemberFollowing.find_by_member_profile_id_and_following_profile_id_and_following_status_and_is_deleted(current_user.profile_id, profile.id, AppConstants::ACCEPTED,false)
-       is_current_user_follower  =  MemberFollowing.find_by_member_profile_id_and_following_profile_id_and_following_status_and_is_deleted(profile.id, current_user.profile_id, AppConstants::ACCEPTED,false)
+       # is_current_user_following =  MemberFollowing.find_by_member_profile_id_and_following_profile_id_and_following_status_and_is_deleted(current_user.profile_id, profile.id, AppConstants::ACCEPTED,false)
+       # is_current_user_follower  =  MemberFollowing.find_by_member_profile_id_and_following_profile_id_and_following_status_and_is_deleted(profile.id, current_user.profile_id, AppConstants::ACCEPTED,false)
 
        response << {
            id:                   member_following.id,
@@ -332,8 +332,8 @@ class MemberFollowing < ApplicationRecord
                photo:            profile.photo,
                gender:           profile.gender,
                dob:              profile.dob,
-               is_im_following:  is_current_user_following ? true : false,
-               is_my_follower:   is_current_user_follower  ? true : false,
+               is_im_following:  MemberProfile.is_following(profile, current_user),
+               is_my_follower:   MemberProfile.is_follower(profile, current_user),
                country: {
                    id:           country.try(:id),
                    country_name: country.try(:country_name)
@@ -352,15 +352,15 @@ class MemberFollowing < ApplicationRecord
        }
 
     end
-    is_current_user_following =  MemberFollowing.find_by_member_profile_id_and_following_profile_id_and_following_status_and_is_deleted(current_user.profile.id, searched_profile.id, ACCEPTED,false)
-    is_current_user_follower  =  MemberFollowing.find_by_member_profile_id_and_following_profile_id_and_following_status_and_is_deleted(searched_profile.id, current_user.profile.id, ACCEPTED,false)
+    # is_current_user_following =  MemberFollowing.find_by_member_profile_id_and_following_profile_id_and_following_status_and_is_deleted(current_user.profile.id, searched_profile.id, ACCEPTED,false)
+    # is_current_user_follower  =  MemberFollowing.find_by_member_profile_id_and_following_profile_id_and_following_status_and_is_deleted(searched_profile.id, current_user.profile.id, ACCEPTED,false)
     profile = {
       id:               searched_profile.id,
       photo:            searched_profile.photo,
       gender:           searched_profile.gender,
       dob:              searched_profile.dob,
-      is_im_following:  is_current_user_following ? true : false,
-      is_my_follower:   is_current_user_follower  ? true : false,
+      is_im_following:  MemberProfile.is_following(searched_profile, current_user),
+      is_my_follower:   MemberProfile.is_follower(searched_profile, current_user),
       country: {
           id:           searched_profile.country.try(:id),
           country_name: searched_profile.country.try(:country_name)

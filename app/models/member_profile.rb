@@ -11,6 +11,7 @@ class MemberProfile < ApplicationRecord
   has_many :user_albums
   has_many :user_sport_abbreviations
   has_many :attended_events
+  has_many :profile_interests
   belongs_to :state
   belongs_to :city
   belongs_to :sport
@@ -19,12 +20,7 @@ class MemberProfile < ApplicationRecord
   belongs_to :role
   belongs_to :country
 
-  accepts_nested_attributes_for :user
-  accepts_nested_attributes_for :user_sport_abbreviations
-
-
-  # after_create :create_default_group
-  # validates :is_profile_public, inclusion: { in: [true, false] }
+  accepts_nested_attributes_for :user, :user_sport_abbreviations, :profile_interests
 
   @@limit = 10
   @@current_profile = nil
@@ -50,19 +46,6 @@ class MemberProfile < ApplicationRecord
 
   def followers_count
     MemberFollowing.where(following_profile_id: self.id, following_status: AppConstants::ACCEPTED).count
-  end
-
-  def is_im_following
-    member_followings = MemberFollowing.where(member_profile_id: @@current_profile.id, following_profile_id: self.id, is_deleted: false)
-    if member_followings.blank?
-      0
-    elsif member_followings.present? && member_followings.first.following_status == AppConstants::ACCEPTED
-      1
-    elsif member_followings.present? && member_followings.first.following_status == AppConstants::PENDING
-      2
-    elsif member_followings.present? && member_followings.first.following_status == AppConstants::REJECTED
-      3
-    end
   end
 
   def self.is_following(profile, current_user)
@@ -96,16 +79,14 @@ class MemberProfile < ApplicationRecord
 
   def member_profile(auth_token=nil)
     member_profile = self.as_json(
-        only: [:id, :about, :phone, :photo, :country_id, :state_id, :city_id, :is_profile_public, :default_group_id, :gender, :promotion_updates, :dob, :account_type, :height, :weight, :school],
+        only: [:id, :about, :photo, :country_id, :state_id, :city_id, :is_profile_public, :default_group_id, :gender, :promotion_updates, :dob, :account_type, :height, :weight, :school, :is_age_visible, :gender, :current_city, :home_town, :occupation, :employer, :college, :college_major, :high_school, :organization, :hobbies, :relationship_status, :political_views, :religion, :languages, :ethnic_background,:contact_email, :contact_phone, :contact_website, :contact_address],
         methods: [:posts_count, :followings_count, :followers_count],
         include: {
             user: {
-                only: [:id, :profile_id, :profile_type, :first_name, :email, :last_name, :banner_image_1, :banner_image_2, :banner_image_3],
-                include: {
-                    role: {
-                        only: [:id, :name]
-                    }
-                }
+                only: [:id, :profile_id, :profile_type, :first_name, :email, :last_name, :phone]
+            },
+            profile_interests:{
+                only:[:id, :name, :interest_type, :photo_url]
             },
             country: {
                 only: [:id, :country_name]
@@ -135,8 +116,8 @@ class MemberProfile < ApplicationRecord
     data = data.with_indifferent_access
     member_profile = MemberProfile.new
     member_profile.attributes = data[:member_profile]
-    status, message = validate_email_and_password(data)
-    if !status.present?
+    # status, message = validate_email_and_password(data)
+    # if !status.present?
       if member_profile.save
         # Create default album for user
         album = member_profile.user_albums.build
@@ -151,11 +132,11 @@ class MemberProfile < ApplicationRecord
         resp_message = 'Errors'
         resp_errors = error_messages(member_profile)
       end
-    else
-      resp_status = 0
-      resp_message = 'Errors'
-      resp_errors = message
-    end
+    # else
+    #   resp_status = 0
+    #   resp_message = 'Errors'
+    #   resp_errors = message
+    # end
     resp_data = ''
     resp_request_id = data[:request_id] if data && data[:request_id].present?
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
@@ -291,16 +272,14 @@ class MemberProfile < ApplicationRecord
   def self.get_profile_response(profile, current_user)
     if profile.id == current_user.profile_id
       member_profile = profile.as_json(
-          only: [:id, :about, :phone, :photo, :country_id, :state_id, :city_id, :is_profile_public, :default_group_id, :gender, :promotion_updates, :dob, :account_type, :height, :weight, :school],
+          only: [:id, :about, :photo, :country_id, :state_id, :city_id, :is_profile_public, :default_group_id, :gender, :promotion_updates, :dob, :account_type, :height, :weight, :school, :is_age_visible, :gender, :current_city, :home_town, :occupation, :employer, :college, :college_major, :high_school, :organization, :hobbies, :relationship_status, :political_views, :religion, :languages, :ethnic_background,:contact_email, :contact_phone, :contact_website, :contact_address],
           methods: [:posts_count, :followings_count, :followers_count],
           include: {
               user: {
-                  only: [:id, :profile_id, :profile_type, :first_name, :email, :last_name, :banner_image_1, :banner_image_2, :banner_image_3],
-                  include: {
-                      role: {
-                          only: [:id, :name]
-                      }
-                  }
+                  only: [:id, :profile_id, :profile_type, :first_name, :email, :last_name, :phone]
+              },
+              profile_interests:{
+                  only:[:id, :name, :interest_type, :photo_url]
               },
               country: {
                   only: [:id, :country_name],
@@ -338,19 +317,17 @@ class MemberProfile < ApplicationRecord
       {member_profile: member_profile}.as_json
     else
       member_profile = profile.to_xml(
-          only: [:id, :about, :phone, :photo, :country_id, :state_id, :city_id, :is_profile_public, :default_group_id, :gender, :promotion_updates, :dob, :account_type, :height, :weight, :school],
+          only: [:id, :about, :photo, :country_id, :state_id, :city_id, :is_profile_public, :default_group_id, :gender, :promotion_updates, :dob, :account_type, :height, :weight, :school, :is_age_visible, :gender, :current_city, :home_town, :occupation, :employer, :college, :college_major, :high_school, :organization, :hobbies, :relationship_status, :political_views, :religion, :languages, :ethnic_background,:contact_email, :contact_phone, :contact_website, :contact_address],
           methods: [:posts_count, :followings_count, :followers_count],
           :procs => Proc.new { |options|
             options[:builder].tag!('is_im_following', MemberProfile.is_following(profile, current_user))
           },
           include: {
               user: {
-                  only: [:id, :profile_id, :profile_type, :first_name, :email, :last_name, :banner_image_1, :banner_image_2, :banner_image_3],
-                  include: {
-                      role: {
-                          only: [:id, :name]
-                      }
-                  }
+                  only: [:id, :profile_id, :profile_type, :first_name, :email, :last_name, :phone]
+              },
+              profile_interests:{
+                only:[:id, :name, :interest_type, :photo_url]
               },
               country: {
                   only: [:id, :country_name],
@@ -593,7 +570,7 @@ class MemberProfile < ApplicationRecord
   def self.user_array_response(users)
     users = users.as_json(
         {
-            only: [:id, :email, :profile_type, :user_status, :gender, :first_name, :last_name, :role_id]
+            only: [:id, :email, :profile_type, :phone, :first_name, :last_name, :role_id]
         }
     )
     {users: users}.as_json

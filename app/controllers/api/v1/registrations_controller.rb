@@ -32,21 +32,15 @@ class Api::V1::RegistrationsController < ApplicationController
     # params = {
     #     member_profile: {
     #         is_profile_public: false,
-    #         country_id: 1,
+    #         account_type: "personal",
     #         gender: "male",
-    #         height: "5.9",
-    #         weight: "58.9",
-    #         account_type: "premium",
-    #         promotion_updates: false,
     #         dob: "12/04/1981",
     #         user_attributes: {
-    #             email: "android2@gmail.com",
-    #             retype_email: "android2@gmail.com",
-    #             first_name: "android",
+    #             phone: "03324167727",
+    #             first_name: "Faisal",
+    #             last_name: "CH",
     #             password: "test123456",
-    #             password_confirmation: "test123456",
-    #             last_name: "android2",
-    #             role_id: 1
+    #             password_confirmation: "test123456"
     #         }
     #     }
     # }

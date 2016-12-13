@@ -2,20 +2,25 @@ class User < ApplicationRecord
   include JsonBuilder
   include Profile
   include AppConstants
+  include PgSearch
+  
   # after_create :send_email
+  
   acts_as_token_authenticatable
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :trackable, :validatable, authentication_keys: [:login]
+  
   has_many :user_sessions
   has_many :user_authentications, dependent: :destroy
-  accepts_nested_attributes_for :user_authentications
   belongs_to :role
   belongs_to :profile, polymorphic: true
+  
+  accepts_nested_attributes_for :user_authentications
   attr_accessor :login
-  # validates_uniqueness_of :username, allow_nil: true
   scope :admin_profiles, -> { where(profile_type: 'AdminProfile') }
 
-  include PgSearch
+  validates_uniqueness_of :phone, allow_nil: true
+  
   multisearchable against: [:first_name, :last_name, :email],
                   if: :published?
 
@@ -41,7 +46,7 @@ class User < ApplicationRecord
     if data[:user][:email].present?
       user = User.find_by_email(data[:user][:email])
     else
-      # user = User.find_by_username(data[:user][:username])
+      user = User.find_by_phone(data[:user][:phone])
     end
     device_type = data[:user_session][:device_type]
     if user && user.valid_password?(data[:user][:password])
@@ -83,8 +88,7 @@ class User < ApplicationRecord
     resp_request_id = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
   end
-
-
+  
   def self.forgot_password(data)
     begin
       data = data.with_indifferent_access
