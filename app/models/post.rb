@@ -1,37 +1,28 @@
 class Post < ApplicationRecord
   include JsonBuilder
+  include AppConstants
   include PgSearch
 
   belongs_to :member_profile
-  has_many :post_videos, dependent: :destroy
-  has_many :post_members, dependent: :destroy
-  has_many :post_likes, dependent: :destroy
-  has_many :post_comments, dependent: :destroy
-  has_many :recent_post_comments, -> { order(created_at: :desc).limit(5) }, class_name: 'PostComment'
-  has_many :recent_reported_posts, -> { order(created_at: :desc).limit(5) }, class_name: 'ReportPost'
-  has_many :recent_post_likes, -> { order(created_at: :desc).limit(5) }, class_name: 'PostLike'
-  has_many :report_posts, dependent: :destroy
-  has_many :reports, as: :reportable
-  has_many :post_users, dependent: :destroy
-  has_many :post_attachments, dependent: :destroy
-  has_many :album_images, dependent: :destroy
+  has_many   :post_videos,        dependent: :destroy
+  has_many   :post_members,       dependent: :destroy
+  has_many   :post_likes,         dependent: :destroy
+  has_many   :post_comments,      dependent: :destroy
+  has_many   :recent_post_comments, -> { order(created_at: :desc).limit(5) }, class_name: 'PostComment'
+  has_many   :recent_post_likes,    -> { order(created_at: :desc).limit(5) }, class_name: 'PostLike'
+  has_many   :post_users,         dependent: :destroy
+  has_many   :post_attachments,   dependent: :destroy
+  has_many   :album_images,       dependent: :destroy
 
   accepts_nested_attributes_for :post_videos, :post_attachments, :post_members, :post_users
 
-  acts_as_mappable default_units: :kms,
-                   lat_column_name: :latitude,
-                   lng_column_name: :longitude
+  acts_as_mappable default_units: :kms, lat_column_name: :latitude, lng_column_name: :longitude
 
   validates :is_post_public, inclusion: {in: [true, false]}
 
   after_commit :process_hashtags
   @@limit = 10
   @@current_profile = nil
-
-
-  # multisearchable against: [:post_title, :post_description],
-  #                 if: :published?
-
 
   pg_search_scope :search_by_title,
     against: [:post_description, :post_title],
@@ -41,10 +32,6 @@ class Post < ApplicationRecord
             dictionary: 'english'
         }
     }
-
-  # def published?
-  #   true
-  # end
 
   def process_hashtags
     arr = []
@@ -71,15 +58,10 @@ class Post < ApplicationRecord
         methods: [:likes_count, :comments_count, :post_members_counts],
         include: {
             member_profile: {
-                only: [:id, :about, :phone, :photo, :country_id, :is_profile_public, :gender, :dob],
+                only: [:id, :photo, :country_id, :is_profile_public, :gender, :dob],
                 include: {
                     user: {
-                        only: [:id, :first_name, :last_name],
-                        include:{
-                            role: {
-                                only:[:id, :name]
-                            }
-                        }
+                        only: [:id, :first_name, :last_name]
                     }
                 }
             },
@@ -105,15 +87,10 @@ class Post < ApplicationRecord
                 only: [:id, :post_comment],
                 include: {
                     member_profile: {
-                        only: [:id, :about, :phone, :photo, :country_id, :gender],
+                        only: [:id, :photo, :country_id, :gender],
                         include: {
                             user: {
-                                only: [:id, :first_name, :last_name],
-                                include:{
-                                    role: {
-                                        only:[:id, :name]
-                                    }
-                                }
+                                only: [:id, :first_name, :last_name]
                             }
                         }
                     }
@@ -123,15 +100,10 @@ class Post < ApplicationRecord
                 only: [:id, :post_comment],
                 include: {
                     member_profile: {
-                        only: [:id, :about, :phone, :photo, :country_id, :gender],
+                        only: [:id, :photo, :country_id, :gender],
                         include: {
                             user: {
-                                only: [:id, :first_name, :last_name],
-                                include:{
-                                    role: {
-                                        only:[:id, :name]
-                                    }
-                                }
+                                only: [:id, :first_name, :last_name]
                             }
                         }
                     }
@@ -153,10 +125,6 @@ class Post < ApplicationRecord
 
   def comments_count
     self.post_comments.where(is_deleted: false).count
-  end
-
-  def report_posts_count
-    self.report_posts.count
   end
 
   def count
@@ -235,17 +203,6 @@ class Post < ApplicationRecord
     # Followers
     member_profile_ids << MemberFollowing.where("following_profile_id = ? AND following_status = ? ", current_user.profile_id, AppConstants::ACCEPTED).pluck(:member_profile_id)
     users = User.where(profile_id: member_profile_ids.flatten.uniq)
-    
-    # if posts.first.is_post_public?
-    #   user_ids  = UserSession.where(session_status: 'open').pluck(:user_id)
-    #   users     = User.where(id: user_ids)
-    # else
-    #   # Followings
-    #   # member_profile_ids << current_user.profile.member_followings.where(following_status: "accepted").pluck(:following_profile_id)
-    #   # Followers
-    #   member_profile_ids << MemberFollowing.where("following_profile_id = ?", current_user.profile_id).pluck(:member_profile_id)
-    #   users = User.where(profile_id: member_profile_ids.flatten.uniq)
-    # end
 
     users && users.each do |user|
       if user != current_user
@@ -256,7 +213,6 @@ class Post < ApplicationRecord
   end
 
   def self.make_post_sync_response(user, posts)
-    # resp_data = Synchronization.sync_response(user.profile, posts, 'Posts')
     profile = user.profile
     sync_object             = profile.synchronizations.first ||  profile.synchronizations.build
     sync_object.sync_token  = SecureRandom.uuid
@@ -270,7 +226,6 @@ class Post < ApplicationRecord
     resp_errors = ''
     response = JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, type: "Sync")
     PostJob.perform_later response, user.id
-    # PostJob.perform_later response, users
   end
 
   def self.post_destroy(data, current_user)
@@ -300,7 +255,6 @@ class Post < ApplicationRecord
       data = data.with_indifferent_access
       post = Post.find_by_id(data[:post][:id])
       if post
-        # resp_data       = post_and_related_posts(post,post.post_title)
         resp_data = post.post_response
         resp_status = 1
         resp_message = 'success'
@@ -332,10 +286,7 @@ class Post < ApplicationRecord
       post = Post.find_by_id(data[:post][:id])
       if post.present?
         post.post_description.present? ? search_key = post.post_description : search_key = post.post_title
-        # posts = PgSearch.multisearch(search_key)
-        # posts = related_post_search(posts)
         posts  = Post.search_by_title(search_key)
-
 
         related_post_ids         = posts.pluck(:id)
         nearest_posts            = Post.within(5, origin: [post.latitude, post.longitude])
@@ -378,54 +329,10 @@ class Post < ApplicationRecord
 
   end
 
-  # Useless Code
-  def self.post_and_related_posts(post)
-    posts = posts.as_json(
-        only: [:id, :post_title, :post_description, :datetime, :longitude, :latitude, :location, :post_datetime, :is_post_public, :location, :latitude, :longitude],
-        include: {
-            member_profile: {
-                only: [:id, :photo],
-                include: {
-                    user: {
-                        only: [:id, :first_name, :last_name],
-                        include: {
-                            role: {
-                                only: [:id, :name]
-                            }
-                        }
-                    }
-                }
-            },
-            post_attachments: {
-                only: [:id, :attachment_url, :thumbnail_url, :attachment_type],
-                include:{
-                    post_photo_users:{
-                        only:[:id, :x_coordinate, :y_coordinate, :member_profile_id],
-                        include: {
-                            member_profile: {
-                                only: [:id],
-                                include: {
-                                    user: {
-                                        only: [:id, :first_name, :last_name]
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-        }
-    )
-
-    {post: post, related_posts: posts}.as_json
-  end
-
   def self.post_update(data, current_user)
     begin
       data = data.with_indifferent_access
       post = current_user.profile.posts.where(id: data[:post][:id]).try(:first)
-      # post = Post.find_by_id(data[:post][:id])
       if post
         post.update_attributes(data[:post])
         resp_data = post.post_response
@@ -456,7 +363,7 @@ class Post < ApplicationRecord
       min_post_date = data[:min_post_date] || Time.now
 
       profile = current_user.profile
-      following_ids= profile.member_followings.where(following_status: "accepted").pluck(:following_profile_id)
+      following_ids= profile.member_followings.where(following_status: AppConstants::ACCEPTED).pluck(:following_profile_id)
 
       posts = Post.where("member_profile_id = ? OR is_post_public = ? OR member_profile_id IN (?) OR is_deleted = ?", current_user.profile_id, true, following_ids, false)
 
@@ -496,12 +403,6 @@ class Post < ApplicationRecord
       if current_user.current_sign_in_at.blank? && last_subs_date.present? && TimeDifference.between(Time.now, last_subs_date).in_minutes < 30
         if current_user.synced_datetime.present?
           posts = posts.where("created_at > ?", current_user.synced_datetime)
-          # selected_posts = posts.where("created_at > ?", current_user.synced_datetime)
-          # if selected_posts.blank?
-          #   posts = posts.order("created_at DESC")
-          # else
-          #   posts = selected_posts
-          # end
           posts = posts.order("created_at DESC")
           start = false
         else
@@ -527,7 +428,6 @@ class Post < ApplicationRecord
       end
 
       if posts.present?
-        # Create sync object
         sync_object             = profile.synchronizations.first ||  profile.synchronizations.build
         sync_object.sync_token  = SecureRandom.uuid
         sync_object.synced_date = posts.first.updated_at
@@ -539,9 +439,9 @@ class Post < ApplicationRecord
         resp_message = 'Posts'
         resp_errors = ''
         if start == 'start_sync'
-          JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, start: start, type: "Sync", next_page_exist: next_page_exist, post_list: true)
+          JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, start: start, type: 'Sync', next_page_exist: next_page_exist, post_list: true)
         else
-          JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, start: start, type: "Sync")
+          JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, start: start, type: 'Sync')
         end
       else
         resp_data = ''
@@ -576,7 +476,6 @@ class Post < ApplicationRecord
       elsif country_name.present?
         member_ids = MemberProfile.where(country_id: current_user.profile.country_id).pluck(:id)
         posts      = Post.where(member_profile_id: member_ids)
-        # posts      = Post.where("lower(post_title) like ? OR lower(post_description) like ?", "%#{country_name}%", "%#{country_name}%").includes(:post_likes, :post_comments)
         hash_tags = Hashtag.where("lower(name) like ?", "%#{country_name}%".downcase)
       else
         posts = Post.order("RANDOM()").order("created_at DESC")
@@ -603,7 +502,6 @@ class Post < ApplicationRecord
   end
 
   def self.trending_api_loop_response(posts, hash_tags, status, current_user, member_profiles=nil)
-    @@current_profile = current_user.profile
     resp_array = []
     posts_array = []
     hash_tags_array = []
@@ -641,7 +539,7 @@ class Post < ApplicationRecord
           likes_count: post.post_likes.count,
           comments_count: post.post_comments.count,
           post_members_counts: post.post_members.count,
-          liked_by_me: post.liked_by_me,
+          liked_by_me: PostLike.liked_by_me(post, current_user.profile_id),
           count: post.post_likes.where(like_status: true, is_deleted: false).count + post.post_comments.where(is_deleted: false).count,
           member_profile: {
               id: member_profile.id,
@@ -650,11 +548,7 @@ class Post < ApplicationRecord
               user: {
                   id: member_profile.user.id,
                   first_name: member_profile.user.first_name,
-                  last_name: member_profile.user.last_name,
-                  role: {
-                      id:  member_profile.user.role_id,
-                      name:  member_profile.user.try(:role).try(:name),
-                  }
+                  last_name: member_profile.user.last_name
               }
           },
           post_attachments:  post_attachments
@@ -698,21 +592,18 @@ class Post < ApplicationRecord
   end
 
   def self.posts_array_response(post_array, profile, sync_token=nil)
-    @@current_profile = profile
-    posts = post_array.as_json(
+    posts = post_array.to_xml(
         only: [:id, :post_title, :post_description, :datetime, :is_post_public, :is_deleted, :created_at, :updated_at, :post_type, :location, :latitude, :longitude],
         methods: [:likes_count, :comments_count, :liked_by_me],
+        :procs => Proc.new { |options, post|
+          options[:builder].tag!('liked_by_me', PostLike.liked_by_me(post, profile.id))
+        },
         include: {
             member_profile: {
-                only: [:id, :about, :phone, :photo, :country_id, :is_profile_public, :gender,],
+                only: [:id, :photo, :country_id, :is_profile_public, :gender],
                 include: {
                     user: {
-                        only: [:id, :first_name, :last_name],
-                        include:{
-                            role: {
-                                only:[:id, :name]
-                            }
-                        }
+                        only: [:id, :first_name, :last_name]
                     }
                 }
             },
@@ -720,15 +611,10 @@ class Post < ApplicationRecord
                 only: [:id, :post_comment, :created_at, :updated_at],
                 include: {
                     member_profile: {
-                        only: [:id, :about, :phone, :photo, :country_id, :is_profile_public, :gender],
+                        only: [:id, :photo, :country_id, :is_profile_public, :gender],
                         include: {
                             user: {
-                                only: [:id, :first_name, :last_name, :banner_image_1, :banner_image_2, :banner_image_3],
-                                include:{
-                                    role: {
-                                        only:[:id, :name]
-                                    }
-                                }
+                                only: [:id, :first_name, :last_name]
                             }
                         }
                     }
@@ -741,12 +627,7 @@ class Post < ApplicationRecord
                         only: [:id, :photo],
                         include: {
                             user: {
-                                only: [:id, :email, :first_name, :last_name, :banner_image_1, :banner_image_2, :banner_image_3],
-                                include:{
-                                    role: {
-                                        only:[:id, :name]
-                                    }
-                                }
+                                only: [:id, :email, :first_name, :last_name]
                             }
                         }
                     }
@@ -759,12 +640,7 @@ class Post < ApplicationRecord
                         only: [:id, :photo],
                         include: {
                             user: {
-                                only: [:id, :first_name, :last_name],
-                                include:{
-                                    role: {
-                                        only:[:id, :name]
-                                    }
-                                }
+                                only: [:id, :first_name, :last_name]
                             }
                         }
                     }
@@ -790,11 +666,11 @@ class Post < ApplicationRecord
             }
         }
     )
-
+    
     if sync_token.present?
-      {sync_token: sync_token, posts: posts}.as_json
+      Hash.from_xml(posts).as_json.merge!(sync_token: sync_token)
     else
-      {posts: posts}.as_json
+      Hash.from_xml(posts).as_json
     end
   end
   
@@ -893,26 +769,23 @@ class Post < ApplicationRecord
             }
         }
     ).merge!(is_im_following: is_following)
-      {posts: posts, member_profile: member_profile}.as_json
+    
+    {posts: posts, member_profile: member_profile}.as_json
   end
 
   def self.other_member_profile_posts_response(posts, profile)
-    @@current_profile = profile
-    posts = posts.as_json(
+    posts = posts.to_xml(
         only: [:id, :post_title, :post_description, :datetime, :is_post_public, :is_deleted, :created_at, :updated_at, :post_type, :location, :latitude, :longitude],
-        methods: [:likes_count, :comments_count, :liked_by_me],
+        methods: [:likes_count, :comments_count],
+        :procs => Proc.new { |options, post|
+          options[:builder].tag!('liked_by_me', PostLike.liked_by_me(post, profile.id))
+        },
         include: {
             member_profile: {
-                only: [:id, :about, :phone, :photo, :country_id, :is_profile_public, :gender],
+                only: [:id, :photo, :country_id, :is_profile_public, :gender],
                 include: {
                     user: {
-                        only: [:id, :first_name, :last_name],
-                        include: {
-                            role: {
-                                only: [:id, :name]
-                            }
-                        }
-
+                        only: [:id, :first_name, :last_name]
                     }
                 }
             },
@@ -947,13 +820,10 @@ class Post < ApplicationRecord
 
       if data[:search][:key].present?
         search_key = data[:search][:key]
-
-        # search_records = PgSearch.multisearch(search_key)
         posts     = Post.search_by_title(search_key)
         users     = User.search_by_title(search_key)
         hash_tags = Hashtag.search_by_title(search_key)
         if posts.present? || users.present? || hash_tags.present?
-          # paging_data, resp_data = discover_search(search_records, page, per_page, data[:search][:type], current_user)
           paging_data, resp_data = discover_search_new(posts, users, hash_tags, page, per_page, data[:search][:type], current_user)
           resp_status = 1
           resp_message = 'Discover list'
@@ -981,12 +851,6 @@ class Post < ApplicationRecord
     end
     resp_request_id   = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
-  end
-
-  # Useless Code
-  def self.related_post_search(posts)
-    post_ids = posts.where(searchable_type: "Post").pluck(:searchable_id)
-    posts = Post.where(id: post_ids)
   end
 
   def self.discover_search_new(posts, users, hash_tags, page, per_page, type, current_user)

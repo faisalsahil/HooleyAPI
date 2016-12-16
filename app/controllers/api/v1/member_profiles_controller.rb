@@ -196,14 +196,14 @@ class Api::V1::MemberProfilesController < Api::V1::ApiProtectedController
   end
   
   def profile_timeline
-    # params = {
-    #     auth_token: "12121212121212",
-    #     page: 1,
-    #     per_page: 10,
-    #     member_profile_id: 2
-    # }
-    user_session = UserSession.find_by_auth_token(params[:auth_token])
-    # user_session = UserSession.last
+    params = {
+        auth_token: "12121212121212",
+        page: 1,
+        per_page: 10,
+        member_profile_id: 5
+    }
+    # user_session = UserSession.find_by_auth_token(params[:auth_token])
+    user_session = UserSession.last
     if user_session.present?
       resp_data = MemberProfile.profile_timeline(params, user_session.user)
       return render json: resp_data

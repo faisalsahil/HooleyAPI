@@ -41,15 +41,10 @@ class PostMember < ApplicationRecord
         only:    [:id],
         include: {
             member_profile: {
-                only:    [:id, :about, :phone, :photo, :country_id, :is_profile_public, :gender],
+                only:    [:id, :photo, :country_id, :is_profile_public, :gender],
                 include: {
                     user: {
-                        only: [:id, :first_name, :last_name],
-                        include: {
-                            role: {
-                                only: [:id, :name]
-                            }
-                        }
+                        only: [:id, :first_name, :last_name]
                     }
                 }
             }

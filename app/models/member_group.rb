@@ -1,11 +1,13 @@
 class MemberGroup < ApplicationRecord
-  belongs_to :member_profile
+  
   has_many :member_group_contacts, dependent: :destroy
+  belongs_to :member_profile
+  
   accepts_nested_attributes_for :member_group_contacts
-  validates_presence_of :group_name, presence: true
-
-  # validates :group_name, uniqueness: true
+  
+  validates_presence_of   :group_name, presence: true
   validates_uniqueness_of :group_name, scope: :member_profile_id
+  
   @@limit = 10
 
   def response_member_group
@@ -16,15 +18,10 @@ class MemberGroup < ApplicationRecord
                 only:    [:id],
                 include: {
                     member_profile: {
-                        only:    [:id, :about, :phone, :photo, :country_id, :gender, :dob],
+                        only:    [:id, :phone, :photo, :country_id, :gender, :dob],
                         include: {
                             user: {
-                                only: [:id, :first_name, :last_name],
-                                include: {
-                                   role: {
-                                       only: [:id, :name]
-                                   }
-                                }
+                                only: [:id, :first_name, :last_name]
                             }
                         }
                     }
@@ -129,9 +126,7 @@ class MemberGroup < ApplicationRecord
     begin
       data         = data.with_indifferent_access
       profile      = current_user.profile
-      # member_group = profile.member_groups.build(data[:member_group])
       member_group = MemberGroup.find_by_id_and_member_profile_id(data[:member_group][:id], profile.id)
-      # if member_group.present? && member_group.is_not_default?
       if member_group.id != profile.default_group_id
         member_group.is_deleted = true
         member_group.save!
@@ -220,15 +215,10 @@ class MemberGroup < ApplicationRecord
                 only:    [:id],
                 include: {
                     member_profile: {
-                        only:    [:id, :about, :phone, :photo, :country_id, :gender, :dob],
+                        only:    [:id, :photo, :country_id, :gender, :dob],
                         include: {
                             user: {
-                                only: [:id, :first_name, :last_name],
-                                include: {
-                                    role: {
-                                        only:[:id, :name]
-                                    }
-                                }
+                                only: [:id, :first_name, :last_name]
                             }
                         }
                     }

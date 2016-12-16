@@ -10,8 +10,8 @@ class User < ApplicationRecord
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :trackable, :validatable, authentication_keys: [:login]
   
-  has_many :user_sessions
-  has_many :user_authentications, dependent: :destroy
+  has_many   :user_sessions
+  has_many   :user_authentications, dependent: :destroy
   belongs_to :role
   belongs_to :profile, polymorphic: true
   
@@ -25,13 +25,13 @@ class User < ApplicationRecord
                   if: :published?
 
   pg_search_scope :search_by_title,
-                  against: [:first_name, :last_name],
-                  using: {
-                      tsearch: {
-                          any_word: true,
-                          dictionary: "english"
-                      }
-                  }
+    against: [:first_name, :last_name],
+    using: {
+        tsearch: {
+            any_word: true,
+            dictionary: "english"
+        }
+    }
 
   def published?
     true
@@ -149,8 +149,6 @@ class User < ApplicationRecord
   def self.log_out(data, current_user)
     begin
       data         = data.with_indifferent_access
-      # is_success, user_session = UserSession.authenticate_session(data[:user_session][:token], data[:request_id])
-      # return user_session unless is_success
       user_session = UserSession.find_by_auth_token(data[:user_session][:token])
       if user_session.present?
         user_session.session_status = 'closed'
@@ -191,17 +189,6 @@ class User < ApplicationRecord
   def login
     @login || self.username || self.email
   end
-
-  # def self.text_search(query)
-  #   # search(query)
-  #   rank = <<-RANK
-  #     ts_rank(to_tsvector(username), plainto_tsquery(#{sanitize(query)})) +
-  #     ts_rank(to_tsvector(full_name), plainto_tsquery(#{sanitize(query)})) +
-  #     ts_rank(to_tsvector(email), plainto_tsquery(#{sanitize(query)}))
-  #   RANK
-  #   where("username @@ :q or full_name @@ :q or email @@ :q", q: "%#{query}%").order("#{rank} DESC")
-  # end
-
 end
 
 # == Schema Information

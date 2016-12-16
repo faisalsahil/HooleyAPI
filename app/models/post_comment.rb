@@ -1,13 +1,13 @@
 class PostComment < ApplicationRecord
   include JsonBuilder
+  
   belongs_to :post
   belongs_to :member_profile
-  has_many :report_comments, dependent: :destroy
+  
   validates_presence_of :post_comment, presence: true
-  has_many :reports, as: :reportable
-
-
+  
   @@limit = 10
+  
 
   def self.post_comment(data, current_user)
     begin
@@ -21,7 +21,6 @@ class PostComment < ApplicationRecord
         resp_message    = 'Comment Successfully Posted'
         resp_errors     = ''
         post_comments   = PostComment.where(id: post_comment.id)
-        # resp_data       = post_comment_response(post_comment)
         resp_data       =  posts_comments_response(post_comments, current_user, post)
       else
         resp_data       = []
@@ -115,7 +114,6 @@ class PostComment < ApplicationRecord
       post_comment = PostComment.find_by_id(data[:post_comment][:id])
 
       if post_comment.member_profile == profile || post_comment.post.member_profile == profile
-        # post_comment.destroy
         post_comment.is_deleted = true
         post_comment.save!
         resp_status     = 1
@@ -193,12 +191,7 @@ class PostComment < ApplicationRecord
                 only:    [:id, :photo],
                 include: {
                     user: {
-                        only: [:id, :first_name, :last_name],
-                        include: {
-                            role: {
-                                only: [:id, :name]
-                            }
-                        }
+                        only: [:id, :first_name, :last_name]
                     }
                 }
             },
@@ -219,12 +212,7 @@ class PostComment < ApplicationRecord
                 only:    [:id, :about, :phone, :photo, :country_id, :is_profile_public, :gender],
                 include: {
                     user: {
-                        only: [:id, :first_name, :last_name],
-                        include: {
-                            role: {
-                                only: [:id, :name]
-                            }
-                        }
+                        only: [:id, :first_name, :last_name]
                     }
                 }
             }
@@ -246,12 +234,7 @@ class PostComment < ApplicationRecord
                   only: [:id, :photo],
                   include: {
                       user: {
-                          only: [:id, :first_name, :last_name],
-                          include:{
-                              role: {
-                                  only: [:id, :name]
-                              }
-                          }
+                          only: [:id, :first_name, :last_name]
                       }
                   }
               },

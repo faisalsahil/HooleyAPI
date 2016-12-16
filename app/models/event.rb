@@ -1,15 +1,14 @@
 class Event < ApplicationRecord
+  
   include JsonBuilder
-
+  include PgSearch
+  
   belongs_to :member_profile
-  belongs_to :currency
-  has_many :event_sports
-  has_many :sports, through: :event_sports
-  accepts_nested_attributes_for :event_sports
-
+  
+  
   @@limit           = 10
   @@current_profile = nil
-  include PgSearch
+  
   pg_search_scope :search_by_title,
                   against: :description,
                   using: {
@@ -100,51 +99,9 @@ class Event < ApplicationRecord
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
   end
 
-  # def self.event_list(data, current_user)
-  #   begin
-  #     data = data.with_indifferent_access
-  #
-  #     per_page    = (data[:per_page] || @@limit).to_i
-  #     page        = (data[:page] || 1).to_i
-  #     events      = Event.all.order('created_at DESC')
-  #     events      = events.page(page.to_i).per_page(per_page.to_i)
-  #     paging_data = JsonBuilder.get_paging_data(page, per_page, events)
-  #
-  #     resp_data       = events_response(events)
-  #     resp_status     = 1
-  #     resp_message    = 'Event List'
-  #     resp_errors     = ''
-  #   rescue Exception => e
-  #     resp_data       = ''
-  #     resp_status     = 0
-  #     paging_data     = ''
-  #     resp_message    = 'error'
-  #     resp_errors     = e
-  #   end
-  #   resp_request_id   = data[:request_id]
-  #   JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
-  # end
-
   def self.events_response(events)
     events = events.as_json(
-        only:    [:id, :name, :country_id, :state_id, :city_id, :organization, :location, :description, :cost, :currency_id, :camp_website, :start_date, :end_date, :upload, :member_profile_id, :created_at, :updated_at],
-        include: {
-            currency:     {
-                only: [:id, :name, :code]
-            },
-            event_sports: {
-                only:    [:id],
-                include: {
-                    sport:          {
-                        only: [:id, :name]
-                    },
-                    sport_position: {
-                        only: [:id, :name]
-                    }
-
-                }
-            }
-        }
+        only:    [:id, :name, :country_id, :city_id, :organization, :location, :description, :cost, :camp_website, :start_date, :end_date, :upload, :member_profile_id, :created_at, :updated_at]
     )
 
     { events: events }.as_json
@@ -152,12 +109,7 @@ class Event < ApplicationRecord
 
   def self.event_response(event)
     event = event.as_json(
-        only:    [:id, :name, :country_id, :state_id, :city_id, :organization, :location, :description, :cost, :currency_id, :camp_website, :start_date, :end_date, :upload, :member_profile_id, :created_at, :updated_at],
-        include: {
-            sports: {
-                only: [:id, :name, :image_url]
-            }
-        }
+        only:    [:id, :name, :country_id, :city_id, :organization, :location, :description, :cost, :camp_website, :start_date, :end_date, :upload, :member_profile_id, :created_at, :updated_at]
     )
 
     events_array = []

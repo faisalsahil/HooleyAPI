@@ -4,6 +4,7 @@ class CreatePostAttachments < ActiveRecord::Migration[5.0]
       t.integer :post_id
       t.string :attachment_url
       t.string :thumbnail_url
+      t.string :attachment_type
 
       t.timestamps
     end

@@ -149,11 +149,6 @@ class ProfileChannel < ApplicationCable::Channel
     ProfileJob.perform_later response, current_user.id
   end
 
-  def sports_data(data)
-    response = MemberProfile.sports_data(data, current_user)
-    ProfileJob.perform_later response, current_user.id
-  end
-
   def country_data(data)
     response = MemberProfile.country_data_list(data, current_user)
     ProfileJob.perform_later response, current_user.id

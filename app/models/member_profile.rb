@@ -2,38 +2,32 @@ class MemberProfile < ApplicationRecord
   include AppConstants
   include PgSearch
 
-  has_one  :user, as: :profile
-  has_many :member_followings
-  has_many :member_groups
-  has_many :posts
-  has_many :synchronizations
-  has_many :events
-  has_many :user_albums
-  has_many :user_sport_abbreviations
-  has_many :attended_events
-  has_many :profile_interests
-  belongs_to :state
+  has_one    :user, as: :profile
+  has_many   :member_followings
+  has_many   :member_groups
+  has_many   :posts
+  has_many   :synchronizations
+  has_many   :events
+  has_many   :user_albums
+  has_many   :profile_interests
   belongs_to :city
-  belongs_to :sport
-  belongs_to :sport_level
-  belongs_to :sport_position
   belongs_to :role
   belongs_to :country
 
-  accepts_nested_attributes_for :user, :user_sport_abbreviations, :profile_interests
+  accepts_nested_attributes_for :user, :profile_interests
 
   @@limit = 10
   @@current_profile = nil
 
 
   pg_search_scope :search_by_name,
-                  against: :name,
-                  using: {
-                      tsearch: {
-                          any_word: true,
-                          dictionary: "english"
-                      }
-                  }
+    against: :name,
+    using: {
+        tsearch: {
+            any_word: true,
+            dictionary: "english"
+        }
+    }
 
 
   def posts_count
@@ -61,17 +55,21 @@ class MemberProfile < ApplicationRecord
     end
   end
 
-  def is_my_follower
-    member_followers = MemberFollowing.where(following_status: AppConstants::ACCEPTED, member_profile_id: self.id, following_profile_id: @@current_profile.id)
-    if member_followers.present?
-      true
-    else
-      false
+  def self.is_follower(profile, current_user)
+    member_followers = MemberFollowing.where(following_status: AppConstants::ACCEPTED, member_profile_id: profile.id, following_profile_id: current_user.profile_id)
+    if member_followers.blank?
+      0
+    elsif member_followers.present? && member_followers.first.following_status == AppConstants::ACCEPTED
+      1
+    elsif member_followers.present? && member_followers.first.following_status == AppConstants::PENDING
+      2
+    elsif member_followers.present? && member_followers.first.following_status == AppConstants::REJECTED
+      3
     end
   end
 
   def create_default_group
-    member_group = self.member_groups.build(group_name: 'ALL')
+    member_group = self.member_groups.build(group_name: AppConstants::TIMELINE)
     member_group.save!
     self.default_group_id = member_group.id
     self.save!
@@ -79,7 +77,7 @@ class MemberProfile < ApplicationRecord
 
   def member_profile(auth_token=nil)
     member_profile = self.as_json(
-        only: [:id, :about, :photo, :country_id, :state_id, :city_id, :is_profile_public, :default_group_id, :gender, :promotion_updates, :dob, :account_type, :height, :weight, :school, :is_age_visible, :gender, :current_city, :home_town, :occupation, :employer, :college, :college_major, :high_school, :organization, :hobbies, :relationship_status, :political_views, :religion, :languages, :ethnic_background,:contact_email, :contact_phone, :contact_website, :contact_address],
+        only: [:id, :photo, :country_id, :city_id, :is_profile_public, :default_group_id, :gender, :dob, :account_type, :high_school, :is_age_visible, :gender, :current_city, :home_town, :occupation, :employer, :college, :college_major, :high_school, :organization, :hobbies, :relationship_status, :political_views, :religion, :languages, :ethnic_background,:contact_email, :contact_phone, :contact_website, :contact_address],
         methods: [:posts_count, :followings_count, :followers_count],
         include: {
             user: {
@@ -91,20 +89,8 @@ class MemberProfile < ApplicationRecord
             country: {
                 only: [:id, :country_name]
             },
-            state:{
-                only: [:id, :name]
-            },
             city:{
                 only:[:id, :name]
-            },
-            sport: {
-                only: [:id, :name]
-            },
-            sport_position: {
-                only: [:id, :name]
-            },
-            sport_level: {
-                only: [:id, :name]
             }
         }
     ).merge!(auth_token: auth_token).as_json
@@ -189,7 +175,7 @@ class MemberProfile < ApplicationRecord
         member_profile.is_profile_public = true #should be in migration default false : Later
         if member_profile.save
           album = member_profile.user_albums.build
-          album.name = "Timeline"
+          album.name = "TimeLine"
           album.default_album = true
           album.save!
 
@@ -272,7 +258,7 @@ class MemberProfile < ApplicationRecord
   def self.get_profile_response(profile, current_user)
     if profile.id == current_user.profile_id
       member_profile = profile.as_json(
-          only: [:id, :about, :photo, :country_id, :state_id, :city_id, :is_profile_public, :default_group_id, :gender, :promotion_updates, :dob, :account_type, :height, :weight, :school, :is_age_visible, :gender, :current_city, :home_town, :occupation, :employer, :college, :college_major, :high_school, :organization, :hobbies, :relationship_status, :political_views, :religion, :languages, :ethnic_background,:contact_email, :contact_phone, :contact_website, :contact_address],
+          only: [:id, :photo, :country_id, :city_id, :is_profile_public, :default_group_id, :gender, :dob, :account_type, :is_age_visible, :gender, :current_city, :home_town, :occupation, :employer, :college, :college_major, :high_school, :organization, :hobbies, :relationship_status, :political_views, :religion, :languages, :ethnic_background,:contact_email, :contact_phone, :contact_website, :contact_address],
           methods: [:posts_count, :followings_count, :followers_count],
           include: {
               user: {
@@ -286,38 +272,18 @@ class MemberProfile < ApplicationRecord
                   include:{
                       cities: {
                           only:[:id, :name, :code]
-                      },
-                      states: {
-                          only:[:id, :name, :code]
                       }
                   }
-              },
-              state:{
-                  only: [:id, :name]
               },
               city:{
                   only:[:id, :name]
-              },
-              sport: {
-                  only: [:id, :name],
-                  include:{
-                      sport_positions:{
-                          only:[:id, :name]
-                      }
-                  }
-              },
-              sport_position: {
-                  only: [:id, :name]
-              },
-              sport_level: {
-                  only: [:id, :name]
               }
           }
       )
       {member_profile: member_profile}.as_json
     else
       member_profile = profile.to_xml(
-          only: [:id, :about, :photo, :country_id, :state_id, :city_id, :is_profile_public, :default_group_id, :gender, :promotion_updates, :dob, :account_type, :height, :weight, :school, :is_age_visible, :gender, :current_city, :home_town, :occupation, :employer, :college, :college_major, :high_school, :organization, :hobbies, :relationship_status, :political_views, :religion, :languages, :ethnic_background,:contact_email, :contact_phone, :contact_website, :contact_address],
+          only: [:id, :photo, :country_id, :city_id, :is_profile_public, :default_group_id, :gender, :dob, :account_type, :is_age_visible, :gender, :current_city, :home_town, :occupation, :employer, :college, :college_major, :high_school, :organization, :hobbies, :relationship_status, :political_views, :religion, :languages, :ethnic_background,:contact_email, :contact_phone, :contact_website, :contact_address],
           methods: [:posts_count, :followings_count, :followers_count],
           :procs => Proc.new { |options|
             options[:builder].tag!('is_im_following', MemberProfile.is_following(profile, current_user))
@@ -334,31 +300,11 @@ class MemberProfile < ApplicationRecord
                   include:{
                       cities: {
                           only:[:id, :name, :code]
-                      },
-                      states: {
-                          only:[:id, :name, :code]
                       }
                   }
-              },
-              state:{
-                  only: [:id, :name]
               },
               city:{
                   only:[:id, :name]
-              },
-              sport: {
-                  only: [:id, :name],
-                  include:{
-                      sport_positions:{
-                          only:[:id, :name]
-                      }
-                  }
-              },
-              sport_position: {
-                  only: [:id, :name]
-              },
-              sport_level: {
-                  only: [:id, :name]
               }
           }
       )
@@ -520,7 +466,6 @@ class MemberProfile < ApplicationRecord
     begin
       data = data.with_indifferent_access
       if data[:member_profile].present?
-        # sport_abbreviation  = current_user.user_sport_abbreviations.build(data[:user_sport_abbreviations_attributes])
         profile = current_user.profile
         profile.attributes = data[:member_profile]
 
@@ -575,39 +520,7 @@ class MemberProfile < ApplicationRecord
     )
     {users: users}.as_json
   end
-
-  def self.sports_data(data, current_user)
-    begin
-      data = data.with_indifferent_access
-      sports = Sport.all
-      sports = sports.as_json(
-          only: [:id, :name],
-          include: {
-              sport_positions: {
-                  only: [:id, :name]
-              }
-          }
-      )
-
-      # Sports Level
-      sports_level = SportLevel.all
-
-      resp_data = {sports: sports, sports_level: sports_level}.as_json
-      resp_status = 1
-      resp_message = 'success'
-      resp_errors = ''
-    rescue Exception => e
-      resp_data = ''
-      resp_status = 0
-      paging_data = ''
-      resp_message = 'error'
-      resp_errors = e
-    end
-
-    resp_request_id = data[:request_id]
-    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
-  end
-
+  
   def self.country_data_list(data, current_user)
     begin
       data = data.with_indifferent_access
@@ -616,9 +529,6 @@ class MemberProfile < ApplicationRecord
           only: [:id, :country_name, :iso, :iso2],
           include: {
               cities: {
-                  only: [:id, :name]
-              },
-              states: {
                   only: [:id, :name]
               }
           }
@@ -664,14 +574,6 @@ class MemberProfile < ApplicationRecord
           profiles = profiles.where('lower(gender) = ? ', data[:search][:gender].downcase)
         end
 
-        if data[:search][:state_id].present?
-          profiles = profiles.where('state_id = ?', data[:search][:state_id])
-        end
-
-        if data[:search][:sport_id].present?
-          profiles = profiles.where('sport_id = ?', data[:search][:sport_id])
-        end
-
         if data[:search][:city_id].present?
           profiles = profiles.where('city_id = ?', data[:search][:city_id])
         end
@@ -679,15 +581,7 @@ class MemberProfile < ApplicationRecord
         if data[:search][:country_id].present?
           profiles = profiles.where('country_id = ?', data[:search][:country_id])
         end
-
-        if data[:search][:sport_position_id].present?
-          profiles = profiles.where('sport_position_id = ?', data[:search][:sport_position_id])
-        end
-
-        if data[:search][:school].present?
-          profiles = profiles.where('lower(school) like ?', "%#{data[:search][:school]}%".downcase)
-        end
-
+        
         records = profiles
 
         if records.present?
@@ -724,33 +618,16 @@ class MemberProfile < ApplicationRecord
 
   def self.Search_records_response(records, type)
     records = records.as_json(
-        only: [:id, :photo, :school, :is_profile_public, :gender, :account_type],
+        only: [:id, :photo, :is_profile_public, :gender, :account_type],
         include: {
             country: {
                 only: [:id, :country_name]
             },
-            state: {
-                only: [:id, :name]
-            },
             city: {
                 only: [:id, :name]
             },
-            sport: {
-                only: [:id, :name]
-            },
-            sport_position: {
-                only: [:id, :name]
-            },
-            sport_level: {
-                only: [:id, :name]
-            },
             user: {
-                only: [:id, :first_name, :last_name, :email],
-                include: {
-                    role: {
-                        only: [:id, :name]
-                    }
-                }
+                only: [:id, :first_name, :last_name, :email]
             }
         }
     )

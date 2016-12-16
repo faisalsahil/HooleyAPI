@@ -1,5 +1,7 @@
 class MemberFollowing < ApplicationRecord
   include AppConstants
+  
+  
   belongs_to :member_profile
   @@limit = 10
 
@@ -82,7 +84,6 @@ class MemberFollowing < ApplicationRecord
   def self.unfollow_member(data, current_user)
     begin
       data             =  data.with_indifferent_access
-      # profile          =  current_user.profile
       member_following =  MemberFollowing.find_by_member_profile_id_and_following_profile_id(current_user.profile_id, data[:member_following][:following_profile_id])
       if member_following.present?
         member_following.is_deleted = true
@@ -172,7 +173,6 @@ class MemberFollowing < ApplicationRecord
       page     = (data[:page] || 1).to_i
 
       profile = current_user.profile
-      # member_followings  = profile.member_followings.where(following_status: AppConstants::PENDING)
       member_followers  = MemberFollowing.where(following_profile_id: current_user.profile_id, following_status: AppConstants::PENDING, is_deleted: false)
 
       if member_followers.present?
@@ -212,7 +212,6 @@ class MemberFollowing < ApplicationRecord
       member_followings = profile.member_followings.where(following_status: AppConstants::ACCEPTED, is_deleted: false) if profile.present?
       if data[:member_profile][:search_key].present?
         profile_ids     = member_followings.pluck(:following_profile_id)
-        # member_profiles = MemberProfile.where(id: profile_ids)
         users = User.where("username @@ :q or full_name @@ :q or email @@ :q", q: "%#{data[:member_profile][:search_key]}%")
         searched_profile_ids = users.where(profile_id: profile_ids).pluck(:profile_id)
         member_followings = profile.member_followings.where(following_status: AppConstants::ACCEPTED, is_deleted: false, following_profile_id: searched_profile_ids)
@@ -253,7 +252,6 @@ class MemberFollowing < ApplicationRecord
       member_followings = MemberFollowing.where(following_status: AppConstants::ACCEPTED, following_profile_id: profile.id, is_deleted: false) if profile.present?
       if data[:member_profile][:search_key].present?
         profile_ids     = member_followings.pluck(:member_profile_id)
-        # member_profiles = MemberProfile.where(id: profile_ids)
         users = User.where("first_name @@ :q or last_name @@ :q or email @@ :q", q: "%#{data[:member_profile][:search_key]}%")
         searched_profile_ids = users.where(profile_id: profile_ids).pluck(:profile_id)
         member_followings = MemberFollowing.where(following_status: AppConstants::ACCEPTED, following_profile_id: profile.id, is_deleted: false, member_profile_id: searched_profile_ids)
@@ -285,21 +283,14 @@ class MemberFollowing < ApplicationRecord
   end
 
   def self.response_member_profiles(member_profiles)
-    # ActiveRecord::Base.include_root_in_json = true
     member_profiles = member_profiles.as_json(
-        {
-            only: [:id, :about, :phone, :photo, :country_id, :gender, :dob],
-            include: {
-                user: {
-                    only: [:id, :first_name, :last_name],
-                    include: {
-                        role: {
-                            only: [:id, :name]
-                        }
-                    }
-                }
-            }
-        }
+      only: [:id, :about, :phone, :photo, :country_id, :gender, :dob],
+      include: {
+          user: {
+              only: [:id, :first_name, :last_name]
+          }
+      }
+        
     )
 
     {member_profiles: member_profiles}.as_json
@@ -316,10 +307,6 @@ class MemberFollowing < ApplicationRecord
        end
        user              = profile.user
        country           = profile.country
-       # member_following =  MemberFollowing.where(following_status: ACCEPTED, member_profile_id: current_user.profile.id, following_profile_id: profile.id)
-       # is_current_user_following =  MemberFollowing.find_by_member_profile_id_and_following_profile_id_and_following_status_and_is_deleted(current_user.profile_id, profile.id, AppConstants::ACCEPTED,false)
-       # is_current_user_follower  =  MemberFollowing.find_by_member_profile_id_and_following_profile_id_and_following_status_and_is_deleted(profile.id, current_user.profile_id, AppConstants::ACCEPTED,false)
-
        response << {
            id:                   member_following.id,
            member_profile_id:    member_following.member_profile_id,
@@ -342,18 +329,12 @@ class MemberFollowing < ApplicationRecord
                    id:           user.id,
                    first_name:   user.first_name,
                    last_name:    user.last_name,
-                   email:        user.email,
-                   role: {
-                       id:     user.role_id,
-                       name:   user.role.name
-                   }
+                   email:        user.email
                }
            }
        }
 
     end
-    # is_current_user_following =  MemberFollowing.find_by_member_profile_id_and_following_profile_id_and_following_status_and_is_deleted(current_user.profile.id, searched_profile.id, ACCEPTED,false)
-    # is_current_user_follower  =  MemberFollowing.find_by_member_profile_id_and_following_profile_id_and_following_status_and_is_deleted(searched_profile.id, current_user.profile.id, ACCEPTED,false)
     profile = {
       id:               searched_profile.id,
       photo:            searched_profile.photo,
@@ -369,11 +350,7 @@ class MemberFollowing < ApplicationRecord
           id:            searched_profile.user.id,
           first_name:    searched_profile.user.first_name,
           last_name:     searched_profile.user.last_name,
-          email:         searched_profile.user.email,
-          role: {
-              id:     searched_profile.user.role_id,
-              name:   searched_profile.user.role.name
-          }
+          email:         searched_profile.user.email
       }
     }
     if root_status.present?
@@ -386,7 +363,6 @@ class MemberFollowing < ApplicationRecord
   def self.send_notification(data)
     user_to_following = MemberProfile.find(data).user
     if user_to_following.user_sessions.where(session_status: 'open').present?
-      # user_session_to_following = user_to_following.user_sessions.last
       resp_data = ''
       resp_request_id = ''
       resp_status = 1
@@ -404,10 +380,7 @@ class MemberFollowing < ApplicationRecord
     page     = (data[:page] || 1).to_i
 
     profile = current_user.profile
-
     member_followings  = MemberFollowing.where(following_profile_id: profile.id, following_status: AppConstants::PENDING)
-    # member_followings  = profile.member_followings.where(following_status: PENDING)
-
     if member_followings.present?
       member_followings = member_followings.page(page.to_i).per_page(per_page.to_i)
       paging_data       = JsonBuilder.get_paging_data(page, per_page, member_followings)

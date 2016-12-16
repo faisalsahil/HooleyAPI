@@ -1,9 +1,10 @@
 class Country < ApplicationRecord
+  
   has_many :member_profiles
-  validates_presence_of :country_name, presence: true
-  has_one :currency
   has_many :cities
-  has_many :states
+  
+  validates_presence_of :country_name, presence: true
+  
 
   def self.get_countries(data=nil)
     countries = Country.all
@@ -21,9 +22,6 @@ class Country < ApplicationRecord
         only: [:id, :country_name, :iso],
         include:{
             cities: {
-                only:[:id, :name, :code]
-            },
-            states: {
                 only:[:id, :name, :code]
             }
         }

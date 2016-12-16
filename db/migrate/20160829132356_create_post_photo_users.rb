@@ -3,7 +3,7 @@ class CreatePostPhotoUsers < ActiveRecord::Migration[5.0]
     create_table :post_photo_users do |t|
       t.float :x_coordinate
       t.float :y_coordinate
-      t.integer :post_id
+      t.integer :post_attachment_id
       t.integer :member_profile_id
 
       t.timestamps

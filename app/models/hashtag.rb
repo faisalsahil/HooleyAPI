@@ -1,8 +1,6 @@
 class Hashtag < ApplicationRecord
 
   include PgSearch
-  # multisearchable against: [:name],
-  #                 if: :published?
 
   pg_search_scope :search_by_title,
     against: :name,
@@ -12,11 +10,6 @@ class Hashtag < ApplicationRecord
             dictionary: "english"
         }
     }
-
-  # def published?
-  #   true
-  #   # updated_at < Time.now
-  # end
 
   def self.auto_complete(data, current_user)
     begin
