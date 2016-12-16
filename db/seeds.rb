@@ -1,4 +1,4 @@
-user_profile               = MemberProfile.create!(about: "I'm admin", country_id: 1, city_id: 1)
+user_profile               = MemberProfile.create!(country_id: 1, city_id: 1)
 user                       = user_profile.build_user
 user.first_name            = "test"
 user.last_name             = "test"
