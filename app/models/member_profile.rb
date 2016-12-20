@@ -3,15 +3,14 @@ class MemberProfile < ApplicationRecord
   include PgSearch
 
   has_one    :user, as: :profile
+  # has_many   :synchronizations
+  has_many   :synchronizations, as: :media
   has_many   :member_followings
   has_many   :member_groups
   has_many   :posts
-  has_many   :synchronizations
   has_many   :events
   has_many   :user_albums
   has_many   :profile_interests
-  belongs_to :city
-  belongs_to :role
   belongs_to :country
 
   accepts_nested_attributes_for :user, :profile_interests

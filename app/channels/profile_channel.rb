@@ -160,8 +160,10 @@ class ProfileChannel < ApplicationCable::Channel
   end
 
   def event_create(data)
-    response = Event.event_create(data, current_user)
+    response, event_id = Event.event_create(data, current_user)
     ProfileJob.perform_later response, current_user.id
+    # Sync this event to members
+    Event.event_sync_to_members(event_id, current_user)
   end
 
   def event_search(data)
@@ -184,15 +186,15 @@ class ProfileChannel < ApplicationCable::Channel
     ProfileJob.perform_later response, current_user.id
   end
 
-  def attend_event(data)
-    response = AttendedEvent.attend_event(data, current_user)
-    ProfileJob.perform_later response, current_user.id
-  end
+  # def attend_event(data)
+  #   response = AttendedEvent.attend_event(data, current_user)
+  #   ProfileJob.perform_later response, current_user.id
+  # end
 
-  def roles(data)
-    response = Role.get_roles(data)
-    ProfileJob.perform_later response, current_user.id
-  end
+  # def roles(data)
+  #   response = Role.get_roles(data)
+  #   ProfileJob.perform_later response, current_user.id
+  # end
 
   protected
   def find_verified_user

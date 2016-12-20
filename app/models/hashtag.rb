@@ -1,6 +1,8 @@
 class Hashtag < ApplicationRecord
 
   include PgSearch
+  has_many :event_hash_tags
+  has_many :events, through: :event_hash_tags
 
   pg_search_scope :search_by_title,
     against: :name,

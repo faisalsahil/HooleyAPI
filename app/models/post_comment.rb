@@ -180,8 +180,7 @@ class PostComment < ApplicationRecord
     resp_request_id   = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
   end
-
-
+  
   # called from controller
   def self.post_comment_response(post_comment)
     post_comment = post_comment.as_json(
@@ -220,13 +219,8 @@ class PostComment < ApplicationRecord
     )
 
     if post.present?
-      post_like = post.post_likes.where(member_profile_id: current_user.profile.id).try(:first)
-      if post_like && post_like.like_status
-        status = true
-      else
-        status = false
-      end
-      post = post.as_json(
+      status = PostLike.liked_by_me(post, current_user.profile_id)
+      post   = post.as_json(
           only: [:id, :post_title, :post_description, :datetime, :post_datetime, :is_post_public, :created_at, :updated_at, :post_type, :location, :latitude, :longitude],
           methods: [:likes_count, :comments_count, :post_members_counts],
           include: {

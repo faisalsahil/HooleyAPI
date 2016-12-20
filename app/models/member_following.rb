@@ -249,13 +249,16 @@ class MemberFollowing < ApplicationRecord
       page     = (data[:page] || 1).to_i
 
       profile = MemberProfile.find_by_id(data[:member_profile][:id])
+      # followers
       member_followings = MemberFollowing.where(following_status: AppConstants::ACCEPTED, following_profile_id: profile.id, is_deleted: false) if profile.present?
+      
       if data[:member_profile][:search_key].present?
         profile_ids     = member_followings.pluck(:member_profile_id)
         users = User.where("first_name @@ :q or last_name @@ :q or email @@ :q", q: "%#{data[:member_profile][:search_key]}%")
         searched_profile_ids = users.where(profile_id: profile_ids).pluck(:profile_id)
         member_followings = MemberFollowing.where(following_status: AppConstants::ACCEPTED, following_profile_id: profile.id, is_deleted: false, member_profile_id: searched_profile_ids)
       end
+      
       if member_followings.present?
         member_followings = member_followings.page(page.to_i).per_page(per_page.to_i)
         paging_data = JsonBuilder.get_paging_data(page, per_page, member_followings)

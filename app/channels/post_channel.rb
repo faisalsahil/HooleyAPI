@@ -1,5 +1,6 @@
 class PostChannel < ApplicationCable::Channel
-
+  
+  # after_subscribe :newly_created_posts
   def subscribed
     if params[:post_id].present?
       stream_from "post_#{params[:post_id]}"

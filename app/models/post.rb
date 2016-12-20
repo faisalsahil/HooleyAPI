@@ -209,12 +209,12 @@ class Post < ApplicationRecord
         make_post_sync_response(user, posts)
       end
     end
-
   end
 
   def self.make_post_sync_response(user, posts)
     profile = user.profile
-    sync_object             = profile.synchronizations.first ||  profile.synchronizations.build
+    # sync_object             = profile.synchronizations.first ||  profile.synchronizations.build
+    sync_object             = profile.synchronizations.build
     sync_object.sync_token  = SecureRandom.uuid
     sync_object.synced_date = posts.first.updated_at
     sync_object.save!
@@ -594,7 +594,7 @@ class Post < ApplicationRecord
   def self.posts_array_response(post_array, profile, sync_token=nil)
     posts = post_array.to_xml(
         only: [:id, :post_title, :post_description, :datetime, :is_post_public, :is_deleted, :created_at, :updated_at, :post_type, :location, :latitude, :longitude],
-        methods: [:likes_count, :comments_count, :liked_by_me],
+        methods: [:likes_count, :comments_count],
         :procs => Proc.new { |options, post|
           options[:builder].tag!('liked_by_me', PostLike.liked_by_me(post, profile.id))
         },
@@ -983,7 +983,6 @@ class Post < ApplicationRecord
     resp_request_id = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
   end
-
 end
 
 # == Schema Information
