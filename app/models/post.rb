@@ -941,11 +941,13 @@ class Post < ApplicationRecord
   def self.sync_ack(data,current_user)
     data        =  data.with_indifferent_access
     sync_object =  Synchronization.find_by_sync_token(data[:synchronization][:sync_token])
-    if sync_object.present?
+    if sync_object.present? && sync_object.media_type == "MemberProfile"
       current_user.synced_datetime = sync_object.synced_date
       if current_user.save
         sync_object.destroy
       end
+    else
+      sync_object.destroy
     end
   end
 
