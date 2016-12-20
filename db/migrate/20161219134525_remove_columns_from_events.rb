@@ -6,7 +6,6 @@ class RemoveColumnsFromEvents < ActiveRecord::Migration[5.0]
     remove_column :events, :organization
     remove_column :events, :description
     remove_column :events, :cost
-    remove_column :events, :currency_id
     remove_column :events, :camp_website
     remove_column :events, :upload
   end
