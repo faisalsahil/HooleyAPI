@@ -12,6 +12,7 @@ class MemberProfile < ApplicationRecord
   has_many   :user_albums
   has_many   :profile_interests
   belongs_to :country
+  belongs_to :city
 
   accepts_nested_attributes_for :user, :profile_interests
 
