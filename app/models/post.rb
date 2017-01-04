@@ -364,7 +364,7 @@ class Post < ApplicationRecord
   end
 
   def self.newly_created_posts(current_user)
-    begin
+    # begin
       last_subs_date = current_user.last_subscription_time
       profile = current_user.profile
       
@@ -424,14 +424,14 @@ class Post < ApplicationRecord
         resp_errors     = ''
         JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
       end
-    rescue Exception => e
-      resp_data       = ''
-      resp_status     = 0
-      paging_data     = ''
-      resp_message    = 'error'
-      resp_errors     = e
-      JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
-    end
+    # rescue Exception => e
+    #   resp_data       = ''
+    #   resp_status     = 0
+    #   paging_data     = ''
+    #   resp_message    = 'error'
+    #   resp_errors     = e
+    #   JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
+    # end
   end
 
   def self.trending_list(data, current_user)
@@ -582,22 +582,6 @@ class Post < ApplicationRecord
             },
             event:{
                 only:[:id, :event_name]
-            },
-            recent_post_comments: {
-                only: [:id, :post_comment, :created_at, :updated_at],
-                include: {
-                    member_profile: {
-                        only: [:id, :photo, :country_id, :is_profile_public, :gender],
-                        :procs => Proc.new { |options, post, recent_post_comment|
-                          options[:builder].tag!('is_co_host_or_host', EventCoHost.is_co_host_or_host(post, recent_post_comment).to_i)
-                        },
-                        include: {
-                            user: {
-                                only: [:id, :first_name, :last_name]
-                            }
-                        }
-                    }
-                }
             },
             recent_post_likes: {
                 only: [:id, :created_at, :updated_at],
