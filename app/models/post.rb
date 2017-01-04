@@ -4,12 +4,13 @@ class Post < ApplicationRecord
   include PgSearch
 
   belongs_to :member_profile
+  belongs_to :event
   has_many   :post_videos,        dependent: :destroy
   has_many   :post_members,       dependent: :destroy
   has_many   :post_likes,         dependent: :destroy
   has_many   :post_comments,      dependent: :destroy
-  has_many   :recent_post_comments, -> { order(created_at: :desc).limit(5) }, class_name: 'PostComment'
-  has_many   :recent_post_likes,    -> { order(created_at: :desc).limit(5) }, class_name: 'PostLike'
+  has_many   :recent_post_comments, -> { order(created_at: :desc).limit(10) }, class_name: 'PostComment'
+  has_many   :recent_post_likes,    -> { order(created_at: :desc).limit(10) }, class_name: 'PostLike'
   has_many   :post_users,         dependent: :destroy
   has_many   :post_attachments,   dependent: :destroy
   has_many   :album_images,       dependent: :destroy
@@ -52,8 +53,8 @@ class Post < ApplicationRecord
     end
   end
 
-  def post_response
-    post = self.as_json(
+  def post_response(post, current_user)
+    post = post.to_xml(
         only: [:id, :post_title, :post_description, :datetime, :post_datetime, :is_post_public, :post_type, :location, :latitude, :longitude],
         methods: [:likes_count, :comments_count, :post_members_counts],
         include: {
@@ -64,6 +65,9 @@ class Post < ApplicationRecord
                         only: [:id, :first_name, :last_name]
                     }
                 }
+            },
+            event:{
+                only:[:id, :event_name]
             },
             post_attachments: {
                 only: [:id, :attachment_url, :thumbnail_url, :attachment_type],
@@ -88,19 +92,7 @@ class Post < ApplicationRecord
                 include: {
                     member_profile: {
                         only: [:id, :photo, :country_id, :gender],
-                        include: {
-                            user: {
-                                only: [:id, :first_name, :last_name]
-                            }
-                        }
-                    }
-                }
-            },
-            recent_post_likes: {
-                only: [:id, :post_comment],
-                include: {
-                    member_profile: {
-                        only: [:id, :photo, :country_id, :gender],
+                        methods:[],
                         include: {
                             user: {
                                 only: [:id, :first_name, :last_name]
@@ -139,20 +131,18 @@ class Post < ApplicationRecord
       false
     end
   end
+  
+  def is_co_host()
+    
+  end
 
   def self.post_create(data, current_user)
     begin
-      data = data.with_indifferent_access
+      data    = data.with_indifferent_access
       profile = current_user.profile
       post = profile.posts.build(data[:post])
       if post.save
-        if data[:album_id].present?
-          album   = current_user.profile.user_albums.find_by_id(data[:album_id])
-        else
-          album   = current_user.profile.user_albums.find_by_default_album(true)
-        end
-        response        = post_to_timeline_album(album, post, current_user)
-        resp_data       = post.post_response
+        resp_data       = post_response(post, current_user)
         resp_status     = 1
         resp_message    = 'Post Created'
         resp_errors     = ''
@@ -174,26 +164,6 @@ class Post < ApplicationRecord
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
   end
 
-  def self.post_to_timeline_album(album, post, current_user)
-    if album.present?
-      post_attachments = post.post_attachments
-      if post_attachments.present?
-        post_attachments.each do |attachment|
-          album_image                          = album.album_images.build
-          album_image.attachment_url           = attachment.attachment_url
-          album_image.thumbnail_url            = attachment.thumbnail_url
-          album_image.post_attachment_id       = attachment.id
-          album_image.post_id                  = post.id
-          album_image.save
-        end
-      else
-        album_image                          = album.album_images.build
-        album_image.post_id                  = post.id
-        album_image.save
-      end
-    end
-  end
-
   def self.post_sync(post_id, current_user)
     posts = Post.where(id: post_id)
     make_post_sync_response(current_user, posts)
@@ -213,18 +183,17 @@ class Post < ApplicationRecord
 
   def self.make_post_sync_response(user, posts)
     profile = user.profile
-    # sync_object             = profile.synchronizations.first ||  profile.synchronizations.build
     sync_object             = profile.synchronizations.build
     sync_object.sync_token  = SecureRandom.uuid
     sync_object.synced_date = posts.first.updated_at
     sync_object.save!
 
-    resp_data = posts_array_response(posts, profile, sync_object.sync_token)
-    resp_status = 1
+    resp_data       = posts_array_response(posts, profile, sync_object.sync_token)
+    resp_status     = 1
     resp_request_id = ''
-    resp_message = 'Posts'
-    resp_errors = ''
-    response = JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, type: "Sync")
+    resp_message    = 'Posts'
+    resp_errors     = ''
+    response        = JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, type: "Sync")
     PostJob.perform_later response, user.id
   end
 
@@ -255,15 +224,15 @@ class Post < ApplicationRecord
       data = data.with_indifferent_access
       post = Post.find_by_id(data[:post][:id])
       if post
-        resp_data = post.post_response
-        resp_status = 1
+        resp_data    = post_response(post, current_user)
+        resp_status  = 1
         resp_message = 'success'
-        resp_errors = ''
+        resp_errors  = ''
       else
-        resp_data = ''
-        resp_status = 0
+        resp_data    = ''
+        resp_status  = 0
         resp_message = 'Errors'
-        resp_errors = 'Post Does not exist'
+        resp_errors  = 'Post Does not exist'
       end
     rescue Exception => e
       resp_data       = ''
@@ -398,8 +367,12 @@ class Post < ApplicationRecord
     begin
       last_subs_date = current_user.last_subscription_time
       profile = current_user.profile
+      
       following_ids = profile.member_followings.where(following_status: AppConstants::ACCEPTED).pluck(:following_profile_id)
-      posts = Post.where("member_profile_id = ? OR is_post_public = ? OR member_profile_id IN (?) OR is_deleted = ?", current_user.profile_id, true, following_ids, false)
+      following_ids << profile.id
+      poll_ids      = PostMember.where(member_profile_id: profile.id).pluck(:post_id)
+      posts = Post.where("(member_profile_id IN (?) OR id IN (?)) AND is_deleted = ?", following_ids, poll_ids, false).distinct
+      
       if current_user.current_sign_in_at.blank? && last_subs_date.present? && TimeDifference.between(Time.now, last_subs_date).in_minutes < 30
         if current_user.synced_datetime.present?
           posts = posts.where("created_at > ?", current_user.synced_datetime)
@@ -433,22 +406,22 @@ class Post < ApplicationRecord
         sync_object.synced_date = posts.first.updated_at
         sync_object.save!
 
-        resp_data = posts_array_response(posts, profile, sync_object.sync_token)
-        resp_status = 1
+        resp_data       = posts_array_response(posts, profile, sync_object.sync_token)
+        resp_status     = 1
         resp_request_id = ''
-        resp_message = 'Posts'
-        resp_errors = ''
+        resp_message    = 'Posts'
+        resp_errors     = ''
         if start == 'start_sync'
           JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, start: start, type: 'Sync', next_page_exist: next_page_exist, post_list: true)
         else
           JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, start: start, type: 'Sync')
         end
       else
-        resp_data = ''
-        resp_status = 0
+        resp_data       = ''
+        resp_status     = 0
         resp_request_id = ''
-        resp_message = 'Posts Not Found'
-        resp_errors = ''
+        resp_message    = 'Posts Not Found'
+        resp_errors     = ''
         JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
       end
     rescue Exception => e
@@ -607,11 +580,17 @@ class Post < ApplicationRecord
                     }
                 }
             },
+            event:{
+                only:[:id, :event_name]
+            },
             recent_post_comments: {
                 only: [:id, :post_comment, :created_at, :updated_at],
                 include: {
                     member_profile: {
                         only: [:id, :photo, :country_id, :is_profile_public, :gender],
+                        :procs => Proc.new { |options, post, recent_post_comment|
+                          options[:builder].tag!('is_co_host_or_host', EventCoHost.is_co_host_or_host(post, recent_post_comment).to_i)
+                        },
                         include: {
                             user: {
                                 only: [:id, :first_name, :last_name]
@@ -628,19 +607,6 @@ class Post < ApplicationRecord
                         include: {
                             user: {
                                 only: [:id, :email, :first_name, :last_name]
-                            }
-                        }
-                    }
-                }
-            },
-            post_members: {
-                only: [:id, :created_at, :updated_at],
-                include: {
-                    member_profile: {
-                        only: [:id, :photo],
-                        include: {
-                            user: {
-                                only: [:id, :first_name, :last_name]
                             }
                         }
                     }

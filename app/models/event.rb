@@ -10,6 +10,7 @@ class Event < ApplicationRecord
   has_many   :hashtags, through: :event_hash_tags
   has_many   :event_members,     dependent: :destroy
   has_many   :synchronizations, as: :media
+  has_many   :posts
     
   accepts_nested_attributes_for :event_members, :event_co_hosts, :event_attachments, :hashtags
   

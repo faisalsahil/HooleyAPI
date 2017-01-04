@@ -203,7 +203,7 @@ class PostComment < ApplicationRecord
     { post_comment: post_comment }.as_json
   end
 
-  def self.posts_comments_response(post_comments_array, current_user, post=nil)
+  def self.posts_comments_response(post_comments_array, current_user, post)
     post_comments = post_comments_array.as_json(
         only:    [:id, :post_id, :post_comment, :created_at, :updated_at],
         include: {
@@ -218,44 +218,43 @@ class PostComment < ApplicationRecord
         }
     )
 
-    if post.present?
-      status = PostLike.liked_by_me(post, current_user.profile_id)
-      post   = post.as_json(
-          only: [:id, :post_title, :post_description, :datetime, :post_datetime, :is_post_public, :created_at, :updated_at, :post_type, :location, :latitude, :longitude],
-          methods: [:likes_count, :comments_count, :post_members_counts],
-          include: {
-              member_profile: {
-                  only: [:id, :photo],
-                  include: {
-                      user: {
-                          only: [:id, :first_name, :last_name]
-                      }
-                  }
-              },
-              post_attachments: {
-                  only: [:id, :attachment_url, :thumbnail_url, :attachment_type],
-                  include:{
-                      post_photo_users:{
-                          only:[:id, :x_coordinate, :y_coordinate, :member_profile_id, :post_attachment_id],
-                          include: {
-                              member_profile: {
-                                  only: [:id],
-                                  include: {
-                                      user: {
-                                          only: [:id, :first_name, :last_name]
-                                      }
-                                  }
-                              }
-                          }
-                      }
-                  }
-              }
-          }
-      ).merge!(liked_by_me: status)
-      { post_comments: post_comments, post: post }.as_json
-    else
-      { post_comments: post_comments}.as_json
-    end
+    status = PostLike.liked_by_me(post, current_user.profile_id)
+    post   = post.as_json(
+        only: [:id, :post_title, :post_description, :datetime, :post_datetime, :is_post_public, :created_at, :updated_at, :post_type, :location, :latitude, :longitude],
+        methods: [:likes_count, :comments_count, :post_members_counts],
+        include: {
+            member_profile: {
+                only: [:id, :photo],
+                include: {
+                    user: {
+                        only: [:id, :first_name, :last_name]
+                    }
+                }
+            },
+            event:{
+                only:[:id, :event_name]
+            },
+            post_attachments: {
+                only: [:id, :attachment_url, :thumbnail_url, :attachment_type],
+                include:{
+                    post_photo_users:{
+                        only:[:id, :x_coordinate, :y_coordinate, :member_profile_id, :post_attachment_id],
+                        include: {
+                            member_profile: {
+                                only: [:id],
+                                include: {
+                                    user: {
+                                        only: [:id, :first_name, :last_name]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ).merge!(liked_by_me: status)
+    { post_comments: post_comments, post: post }.as_json
   end
 end
 
