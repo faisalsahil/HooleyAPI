@@ -7,7 +7,7 @@ class PostChannel < ApplicationCable::Channel
       sync_created_comments(current_user, params[:post_id])
     elsif current_user.present?
       stream_from "post_channel_#{current_user.id}"
-      # newly_created_posts(current_user)
+      newly_created_posts(current_user)
     else
       current_user = find_verified_user
       stream_from "post_channel_#{current_user.id}"
