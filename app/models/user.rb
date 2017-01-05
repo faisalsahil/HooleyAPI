@@ -108,7 +108,6 @@ class User < ApplicationRecord
     rescue Exception => e
       resp_data       = ''
       resp_status     = 0
-      paging_data     = ''
       resp_message    = 'error'
       resp_errors     = e
     end

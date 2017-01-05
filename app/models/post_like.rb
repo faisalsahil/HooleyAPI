@@ -19,20 +19,19 @@ class PostLike < ApplicationRecord
   def self.post_like(data, current_user)
     begin
       data                        = data.with_indifferent_access
-      profile                     = current_user.profile
       post                        = Post.find_by_id(data[:post][:id])
-      post_like                   = PostLike.find_by_post_id_and_member_profile_id(post.id, current_user.profile.id) || post.post_likes.build
-      post_like.member_profile_id = profile.id
+      post_like                   = PostLike.find_by_post_id_and_member_profile_id(post.id, current_user.profile_id) || post.post_likes.build
+      post_like.member_profile_id = current_user.profile_id
       post_like.like_status       = data[:post][:is_like]
       if post_like.save
-        resp_data            = post_like_live(post_like)
+        resp_data     = post_like_live(post_like)
         post_comments = []
         resp_broadcast_data  = PostComment.posts_comments_response(post_comments, current_user, post)
         resp_status          = 1
         resp_errors          = ''
         data[:post][:is_like] == true || data[:post][:is_like] == 1 ? resp_message = 'liked Successfully' : resp_message = 'disliked Successfully'
       else
-        resp_data           = ''
+        resp_data           = {}
         resp_broadcast_data = ''
         resp_status         = 0
         resp_message        = 'Errors'
@@ -42,16 +41,56 @@ class PostLike < ApplicationRecord
       resp_broadcast  = JsonBuilder.json_builder(resp_broadcast_data, resp_status, resp_message, '', errors: resp_errors, type: "Sync")
       [response, resp_broadcast]
     rescue Exception => e
-      resp_data       = ''
+      resp_data       = {}
       resp_status     = 0
-      paging_data     = ''
       resp_message    = 'error'
       resp_errors     = e
       resp_request_id = data[:request_id]
-      JsonBuilder.json_builder(resp_broadcast_data, resp_status, resp_message, '', errors: resp_errors)
+      JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id: resp_request_id, errors: resp_errors)
     end
   end
 
+  def self.post_like_live(post_like)
+    post_like = post_like.as_json(
+        only: [:id],
+        include:{
+            member_profile: {
+                only: [:id, :photo],
+                include:{
+                    user:{
+                        only:[:id, :first_name, :last_name]
+                    }
+                }
+            },
+            post: {
+                only: [:id],
+                methods: [:likes_count]
+            }
+        }
+    )
+  
+    {post_like: post_like}.as_json
+  end
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   def self.post_likes_list(data, current_user, sync=nil)
     begin
       data       = data.with_indifferent_access
@@ -95,32 +134,7 @@ class PostLike < ApplicationRecord
     end
   end
 
-  def self.post_like_live(post_like)
-    post_like = post_like.as_json(
-      only: [:id],
-      include:{
-          member_profile: {
-            only: [:id, :photo, :country_id, :is_profile_public, :gender],
-            include:{
-                user:{
-                    only:[:id, :first_name, :last_name],
-                    include: {
-                        role: {
-                            only: [:id, :name]
-                        }
-                    }
-                }
-            }
-          },
-          post: {
-              only: [:id],
-              methods: [:likes_count]
-          }
-      }
-    )
-
-    {post_like: post_like}.as_json
-  end
+  
 
   def self.post_likes_response(post_likes_array)
     post_likes =  post_likes_array.as_json(

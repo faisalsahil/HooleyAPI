@@ -53,8 +53,8 @@ class Post < ApplicationRecord
     end
   end
 
-  def post_response(post, current_user)
-    post = post.to_xml(
+  def post_response
+    post = self.as_json(
         only: [:id, :post_title, :post_description, :datetime, :post_datetime, :is_post_public, :post_type, :location, :latitude, :longitude],
         methods: [:likes_count, :comments_count, :post_members_counts],
         include: {
@@ -89,10 +89,10 @@ class Post < ApplicationRecord
             },
             recent_post_comments: {
                 only: [:id, :post_comment],
+                methods:[:is_co_host_or_host],
                 include: {
                     member_profile: {
-                        only: [:id, :photo, :country_id, :gender],
-                        methods:[],
+                        only: [:id, :photo],
                         include: {
                             user: {
                                 only: [:id, :first_name, :last_name]
@@ -103,7 +103,6 @@ class Post < ApplicationRecord
             }
         }
     )
-
     {post: post}.as_json
   end
 
@@ -132,17 +131,13 @@ class Post < ApplicationRecord
     end
   end
   
-  def is_co_host()
-    
-  end
-
   def self.post_create(data, current_user)
     begin
       data    = data.with_indifferent_access
       profile = current_user.profile
       post = profile.posts.build(data[:post])
       if post.save
-        resp_data       = post_response(post, current_user)
+        resp_data       = post.post_response
         resp_status     = 1
         resp_message    = 'Post Created'
         resp_errors     = ''
@@ -159,7 +154,6 @@ class Post < ApplicationRecord
       resp_message    = 'error'
       resp_errors     = e
     end
-
     resp_request_id = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
   end
@@ -200,20 +194,19 @@ class Post < ApplicationRecord
   def self.post_destroy(data, current_user)
     begin
       data = data.with_indifferent_access
-
       post = Post.find_by_id(data[:post][:id])
       post.is_deleted = true
       post.save!
-      resp_status = 1
-      resp_message = 'Post deleted'
-      resp_errors = ''
-      resp_data = ''
+      resp_status   = 1
+      resp_message  = 'Post deleted'
+      resp_errors   = ''
+      resp_data     = {}
     rescue Exception => e
-      resp_data       = ''
-      resp_status     = 0
-      paging_data     = ''
-      resp_message    = 'error'
-      resp_errors     = e
+      resp_data     = ''
+      resp_status   = 0
+      paging_data   = ''
+      resp_message  = 'error'
+      resp_errors   = e
     end
     resp_request_id   = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
@@ -224,7 +217,7 @@ class Post < ApplicationRecord
       data = data.with_indifferent_access
       post = Post.find_by_id(data[:post][:id])
       if post
-        resp_data    = post_response(post, current_user)
+        resp_data    = post.post_response
         resp_status  = 1
         resp_message = 'success'
         resp_errors  = ''
@@ -243,59 +236,6 @@ class Post < ApplicationRecord
     end
     resp_request_id   = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
-  end
-
-  def self.related_posts(data, current_user)
-    begin
-      data = data.with_indifferent_access
-
-      per_page = (data[:per_page] || 20).to_i
-      page = (data[:page] || 1).to_i
-
-      post = Post.find_by_id(data[:post][:id])
-      if post.present?
-        post.post_description.present? ? search_key = post.post_description : search_key = post.post_title
-        posts  = Post.search_by_title(search_key)
-
-        related_post_ids         = posts.pluck(:id)
-        nearest_posts            = Post.within(5, origin: [post.latitude, post.longitude])
-        nearest_related_posts    = nearest_posts.where(id: related_post_ids)
-        nearest_related_post_ids = nearest_related_posts.pluck(:id)
-
-        filtered_posts = posts.reject { |h| nearest_related_post_ids.include? h['id'] }
-
-        post_array = []
-        post_array << nearest_related_posts
-        post_array << filtered_posts
-        post_array = post_array.flatten
-
-        post_array = post_array.drop((page-1)*per_page)
-        post_array = post_array.take(per_page)
-
-        posts       = posts.page(page.to_i).per_page(per_page.to_i)
-        paging_data = JsonBuilder.get_paging_data(page, per_page, posts)
-
-        resp_data     = posts_array_response(post_array, current_user.profile)
-        resp_status   = 1
-        resp_message  = 'success'
-        resp_errors   = ''
-      else
-        resp_data     = ''
-        resp_status   = 0
-        resp_message  = 'Error'
-        resp_errors   = 'Post not found'
-        paging_data   = ''
-      end
-    rescue Exception => e
-      resp_data       = ''
-      resp_status     = 0
-      paging_data     = ''
-      resp_message    = 'error'
-      resp_errors     = e
-    end
-    resp_request_id   = data[:request_id]
-    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
-
   end
 
   def self.post_update(data, current_user)
@@ -364,7 +304,7 @@ class Post < ApplicationRecord
   end
 
   def self.newly_created_posts(current_user)
-    # begin
+    begin
       last_subs_date = current_user.last_subscription_time
       profile = current_user.profile
       
@@ -424,35 +364,34 @@ class Post < ApplicationRecord
         resp_errors     = ''
         JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
       end
-    # rescue Exception => e
-    #   resp_data       = ''
-    #   resp_status     = 0
-    #   paging_data     = ''
-    #   resp_message    = 'error'
-    #   resp_errors     = e
-    #   JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
-    # end
+    rescue Exception => e
+      resp_data       = ''
+      resp_status     = 0
+      paging_data     = ''
+      resp_message    = 'error'
+      resp_errors     = e
+      JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
+    end
   end
 
   def self.trending_list(data, current_user)
     begin
-      data = data.with_indifferent_access
-
+      data     = data.with_indifferent_access
       per_page = (data[:per_page] || @@limit).to_i
-      page = (data[:page] || 1).to_i
+      page     = (data[:page] || 1).to_i
 
       country_name = current_user.profile.try(:country).try(:country_name)
-      if data[:search][:key].present?
+      if data[:search].present? && data[:search][:key].present?
         search_key = data[:search][:key]
-        posts = Post.where("lower(post_title) like ? OR lower(post_description) like ?", "%#{search_key}%".downcase, "%#{search_key}%".downcase).includes(:post_likes, :post_comments)
-        hash_tags = Hashtag.where("lower(name) like ?", "%#{search_key}%".downcase)
+        posts      = Post.where("lower(post_title) like ? OR lower(post_description) like ?", "%#{search_key}%".downcase, "%#{search_key}%".downcase)
+        hash_tags  = Hashtag.where("lower(name) like ?", "%#{search_key}%".downcase)
       elsif country_name.present?
         member_ids = MemberProfile.where(country_id: current_user.profile.country_id).pluck(:id)
         posts      = Post.where(member_profile_id: member_ids)
-        hash_tags = Hashtag.where("lower(name) like ?", "%#{country_name}%".downcase)
+        hash_tags  = Hashtag.where("lower(name) like ?", "%#{country_name}%".downcase)
       else
-        posts = Post.order("RANDOM()").order("created_at DESC")
-        hash_tags = Hashtag.order("RANDOM()").order("created_at DESC")
+        posts      = Post.order("RANDOM()").order("created_at DESC")
+        hash_tags  = Hashtag.order("RANDOM()").order("created_at DESC")
       end
 
       posts       = posts.page(page.to_i).per_page(per_page.to_i)
@@ -464,11 +403,11 @@ class Post < ApplicationRecord
       resp_message = 'Trending list'
       resp_errors  = ''
     rescue Exception => e
-      resp_data       = ''
-      resp_status     = 0
-      paging_data     = ''
-      resp_message    = 'error'
-      resp_errors     = e
+      resp_data    = ''
+      resp_status  = 0
+      paging_data  = ''
+      resp_message = 'error'
+      resp_errors  = e
     end
     resp_request_id   = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
@@ -499,29 +438,30 @@ class Post < ApplicationRecord
             }
          }
       )
+      user  = member_profile.user
       posts_array << {
-          type: "Post",
+          type: 'Post',
           id: post.id,
-          post_title: post.post_title,
+          post_title:       post.post_title,
           post_description: post.post_description,
           is_post_public: post.is_post_public,
-          post_type: post.post_type,
-          location: post.location,
-          latitude: post.latitude,
-          longitude: post.longitude,
-          likes_count: post.post_likes.count,
+          post_type:      post.post_type,
+          location:       post.location,
+          latitude:       post.latitude,
+          longitude:      post.longitude,
+          likes_count:    post.post_likes.count,
           comments_count: post.post_comments.count,
           post_members_counts: post.post_members.count,
           liked_by_me: PostLike.liked_by_me(post, current_user.profile_id),
           count: post.post_likes.where(like_status: true, is_deleted: false).count + post.post_comments.where(is_deleted: false).count,
           member_profile: {
-              id: member_profile.id,
-              photo: member_profile.photo,
+              id:     member_profile.id,
+              photo:  member_profile.photo,
               gender: member_profile.gender,
               user: {
-                  id: member_profile.user.id,
-                  first_name: member_profile.user.first_name,
-                  last_name: member_profile.user.last_name
+                  id:         user.id,
+                  first_name: user.first_name,
+                  last_name:  user.last_name
               }
           },
           post_attachments:  post_attachments
@@ -531,23 +471,24 @@ class Post < ApplicationRecord
     # Hashtag
     hash_tags && hash_tags.each do |hash_tag|
       hash_tags_array << {
-          type: "HashTag",
-          id: hash_tag.id,
-          name: hash_tag.name,
+          type:  'HashTag',
+          id:    hash_tag.id,
+          name:  hash_tag.name,
           count: hash_tag.count
       }
     end
 
     if status.present?
       member_profiles && member_profiles.each do |profile|
+        user = profile.user
         profiles_array << {
-            type: "MemberProfile",
-            id: profile.id,
+            type:  'MemberProfile',
+            id:    profile.id,
             photo: profile.photo,
             user: {
-                id: profile.user.id,
-                first_name: profile.user.first_name,
-                last_name: profile.user.last_name,
+                id:         user.id,
+                first_name: user.first_name,
+                last_name:  user.last_name,
             }
         }
       end
@@ -590,7 +531,21 @@ class Post < ApplicationRecord
                         only: [:id, :photo],
                         include: {
                             user: {
-                                only: [:id, :email, :first_name, :last_name]
+                                only: [:id, :first_name, :last_name]
+                            }
+                        }
+                    }
+                }
+            },
+            recent_post_comments: {
+                only: [:id, :post_comment],
+                methods:[:is_co_host_or_host],
+                include: {
+                    member_profile: {
+                        only: [:id, :photo],
+                        include: {
+                            user: {
+                                only: [:id, :first_name, :last_name],
                             }
                         }
                     }
@@ -623,260 +578,6 @@ class Post < ApplicationRecord
       Hash.from_xml(posts).as_json
     end
   end
-  
-  def self.timeline_posts_array_response(posts, profile, current_user)
-    @@current_profile = profile
-    posts = posts.as_json(
-        only: [:id, :post_title, :post_description, :datetime, :is_post_public, :is_deleted, :created_at, :updated_at, :post_type, :location, :latitude, :longitude],
-        methods: [:likes_count, :comments_count, :liked_by_me],
-        include: {
-            recent_post_comments: {
-                only: [:id, :post_comment, :created_at, :updated_at],
-                include: {
-                    member_profile: {
-                        only: [:id, :about, :phone, :photo, :country_id, :is_profile_public, :gender],
-                        include: {
-                            user: {
-                                only: [:id, :first_name, :last_name, :banner_image_1, :banner_image_2, :banner_image_3],
-                                include:{
-                                    role: {
-                                        only:[:id, :name]
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            recent_post_likes: {
-                only: [:id, :created_at, :updated_at],
-                include: {
-                    member_profile: {
-                        only: [:id, :photo],
-                        include: {
-                            user: {
-                                only: [:id, :email, :first_name, :last_name, :banner_image_1, :banner_image_2, :banner_image_3],
-                                include:{
-                                    role: {
-                                        only:[:id, :name]
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            post_members: {
-                only: [:id, :created_at, :updated_at],
-                include: {
-                    member_profile: {
-                        only: [:id, :photo],
-                        include: {
-                            user: {
-                                only: [:id, :first_name, :last_name],
-                                include:{
-                                    role: {
-                                        only:[:id, :name]
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            post_attachments: {
-                only: [:id, :attachment_url, :thumbnail_url, :created_at, :updated_at, :attachment_type],
-                include:{
-                    post_photo_users:{
-                        only:[:id, :x_coordinate, :y_coordinate, :member_profile_id, :post_attachment_id],
-                        include: {
-                            member_profile: {
-                                only: [:id],
-                                include: {
-                                    user: {
-                                        only: [:id, :first_name, :last_name]
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    )
-
-    is_following = MemberProfile.is_following(profile, current_user)
-    member_profile = profile.as_json(
-        only: [:id, :about, :phone, :photo, :country_id, :state_id, :city_id, :gender, :dob, :height, :weight, :school],
-        include: {
-            user: {
-                only: [:id, :first_name, :last_name, :banner_image_1, :banner_image_2, :banner_image_3],
-                include:{
-                    role: {
-                        only:[:id, :name]
-                    }
-                }
-            }
-        }
-    ).merge!(is_im_following: is_following)
-    
-    {posts: posts, member_profile: member_profile}.as_json
-  end
-
-  def self.other_member_profile_posts_response(posts, profile)
-    posts = posts.to_xml(
-        only: [:id, :post_title, :post_description, :datetime, :is_post_public, :is_deleted, :created_at, :updated_at, :post_type, :location, :latitude, :longitude],
-        methods: [:likes_count, :comments_count],
-        :procs => Proc.new { |options, post|
-          options[:builder].tag!('liked_by_me', PostLike.liked_by_me(post, profile.id))
-        },
-        include: {
-            member_profile: {
-                only: [:id, :photo, :country_id, :is_profile_public, :gender],
-                include: {
-                    user: {
-                        only: [:id, :first_name, :last_name]
-                    }
-                }
-            },
-            post_attachments: {
-                only: [:id, :attachment_url, :thumbnail_url, :created_at, :updated_at, :attachment_type],
-                include:{
-                    post_photo_users:{
-                        only:[:id, :x_coordinate, :y_coordinate, :member_profile_id],
-                        include: {
-                            member_profile: {
-                                only: [:id],
-                                include: {
-                                    user: {
-                                        only: [:id, :first_name, :last_name]
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    )
-  end
-
-  def self.discover(data, current_user)
-    begin
-      data = data.with_indifferent_access
-
-      per_page = (data[:per_page] || @@limit).to_i
-      page = (data[:page] || 1).to_i
-
-      if data[:search][:key].present?
-        search_key = data[:search][:key]
-        posts     = Post.search_by_title(search_key)
-        users     = User.search_by_title(search_key)
-        hash_tags = Hashtag.search_by_title(search_key)
-        if posts.present? || users.present? || hash_tags.present?
-          paging_data, resp_data = discover_search_new(posts, users, hash_tags, page, per_page, data[:search][:type], current_user)
-          resp_status = 1
-          resp_message = 'Discover list'
-          resp_errors = ''
-        else
-          resp_data    = ''
-          resp_status  = 0
-          resp_message = 'error'
-          resp_errors  = 'No Record found'
-          paging_data  = ''
-        end
-      else
-        resp_data    = ''
-        resp_status  = 0
-        resp_message = 'error'
-        resp_errors  = 'No Key found'
-        paging_data  = ''
-      end
-    rescue Exception => e
-      resp_data       = ''
-      resp_status     = 0
-      paging_data     = ''
-      resp_message    = 'error'
-      resp_errors     = e
-    end
-    resp_request_id   = data[:request_id]
-    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
-  end
-
-  def self.discover_search_new(posts, users, hash_tags, page, per_page, type, current_user)
-    larger_array_type = ''
-
-    if type.blank? || type == 'Member'
-      profile_ids     = users.pluck(:profile_id)
-      member_profiles = MemberProfile.where(id: profile_ids)
-      member_profiles = member_profiles.page(page.to_i).per_page(per_page.to_i)
-    end
-
-    if type.blank? || type == 'Post'
-      posts = posts.page(page.to_i).per_page(per_page.to_i)
-    end
-
-    if type.blank? || type == 'Hashtag'
-      hash_tags = hash_tags.page(page.to_i).per_page(per_page.to_i)
-    end
-
-    if type.present?
-      larger_array_type = type
-    else
-      if member_profiles.count > posts.count || member_profiles.count > hash_tags.count
-        larger_array_type = 'Member'
-      elsif posts.count > member_profiles.count || posts.count > hash_tags.count
-        larger_array_type = 'Post'
-      elsif hash_tags.count > member_profiles.count || hash_tags.count > posts.count
-        larger_array_type = 'Hashtag'
-      end
-    end
-
-    paging_data = JsonBuilder.get_paging_data(page, per_page, paging_records(member_profiles, posts, hash_tags, larger_array_type))
-    resp_data = trending_api_loop_response(posts, hash_tags, true, current_user, member_profiles)
-    [paging_data, resp_data]
-  end
-
-  def self.discover_search(search_records, page, per_page, type, current_user)
-    larger_array_type = ''
-
-    if type.blank? || type == 'Member'
-      user_ids = search_records.where(searchable_type: "User").pluck(:searchable_id)
-
-      # user_ids.delete(current_user.id)
-      profile_ids = User.where(id: user_ids).pluck(:profile_id)
-      member_profiles = MemberProfile.where(id: profile_ids)
-      member_profiles = member_profiles.page(page.to_i).per_page(per_page.to_i)
-    end
-
-    if type.blank? || type == 'Post'
-      post_ids = search_records.where(searchable_type: "Post").pluck(:searchable_id)
-      posts = Post.where(id: post_ids)
-      posts = posts.page(page.to_i).per_page(per_page.to_i)
-    end
-
-    if type.blank? || type == 'Hashtag'
-      hashtag_ids = search_records.where(searchable_type: "Hashtag").pluck(:searchable_id)
-      hash_tags = Hashtag.where(id: hashtag_ids)
-      hash_tags = hash_tags.page(page.to_i).per_page(per_page.to_i)
-    end
-
-    if type.present?
-      larger_array_type = type
-    else
-      if member_profiles.count > posts.count || member_profiles.count > hash_tags.count
-        larger_array_type = 'Member'
-      elsif posts.count > member_profiles.count || posts.count > hash_tags.count
-        larger_array_type = 'Post'
-      elsif hash_tags.count > member_profiles.count || hash_tags.count > posts.count
-        larger_array_type = 'Hashtag'
-      end
-    end
-
-    paging_data = JsonBuilder.get_paging_data(page, per_page, paging_records(member_profiles, posts, hash_tags, larger_array_type))
-    resp_data = trending_api_loop_response(posts, hash_tags, true, current_user, member_profiles)
-    [paging_data, resp_data]
-  end
 
   def self.paging_records(member_profiles, posts, hash_tags, larger_array_type)
     if larger_array_type == 'Member'
@@ -900,39 +601,32 @@ class Post < ApplicationRecord
       sync_object.destroy
     end
   end
-
-  def self.get_member_posts(data, current_user)
+  
+  def self.near_me_posts(data, current_user)
     begin
-      data    = data.with_indifferent_access
+      data     = data.with_indifferent_access
+      profile  = current_user.profile
       per_page = (data[:per_page] || @@limit).to_i
       page     = (data[:page] || 1).to_i
-
-      profile = MemberProfile.find_by_id(data[:member_profile][:id])
-
-      posts = profile.posts if profile.present?
-      if posts.present?
-        posts         = posts.order("created_at DESC")
-        posts         = posts.page(page.to_i).per_page(per_page.to_i)
-        paging_data   = JsonBuilder.get_paging_data(page, per_page, posts)
-        resp_data     = posts_array_response(posts, profile)
-        resp_status   = 1
-        resp_message  = 'Member Posts '
-        resp_errors   = ''
-      else
-        resp_data = ''
-        resp_status = 0
-        resp_message = 'Error'
-        resp_errors = 'No Post Found.'
-        paging_data = ''
-      end
+      
+      posts = Post.within(5, :origin => [profile.latitude, profile.longitude])
+      posts = posts.where(is_deleted: false)
+      posts = posts.order("created_at DESC")
+      posts = posts.page(page.to_i).per_page(per_page.to_i)
+      
+      paging_data = JsonBuilder.get_paging_data(page, per_page, posts)
+      resp_data    = posts_array_response(posts, profile)
+      resp_status  = 1
+      resp_message = 'Post list'
+      resp_errors  = ''
     rescue Exception => e
-      resp_data       = ''
-      resp_status     = 0
-      paging_data     = ''
-      resp_message    = 'error'
-      resp_errors     = e
+      resp_data    = ''
+      resp_status  = 0
+      paging_data  = ''
+      resp_message = 'error'
+      resp_errors  = e
     end
-    resp_request_id = data[:request_id]
+    resp_request_id   = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
   end
 end

@@ -7,7 +7,7 @@ class PostChannel < ApplicationCable::Channel
       sync_created_comments(current_user, params[:post_id])
     elsif current_user.present?
       stream_from "post_channel_#{current_user.id}"
-      newly_created_posts(current_user)
+      # newly_created_posts(current_user)
     else
       current_user = find_verified_user
       stream_from "post_channel_#{current_user.id}"
@@ -55,24 +55,6 @@ class PostChannel < ApplicationCable::Channel
     PostJob.perform_later response, current_user.id
   end
 
-  def post_comment(data)
-    response, broadcast_response = PostComment.post_comment(data, current_user)
-    PostJob.perform_later response, current_user.id
-    if broadcast_response.present?
-      json_obj = JSON.parse(response)
-      post_id  = json_obj["data"]["post_comments"][0]["post_id"]
-      PostJob.perform_later broadcast_response, '', post_id
-    end
-  end
-
-  def post_like(data)
-    response, resp_broadcast = PostLike.post_like(data, current_user)
-    PostJob.perform_later response, current_user.id
-    json_obj = JSON.parse(response)
-    post_id  = json_obj["data"]["post_like"]["post"]["id"]
-    PostJob.perform_later resp_broadcast, '', post_id
-  end
-
   def post_update(data)
     response = Post.post_update(data, current_user)
     PostJob.perform_later response, current_user.id
@@ -82,16 +64,63 @@ class PostChannel < ApplicationCable::Channel
     response = Post.post_list(data, current_user)
     PostJob.perform_later response, current_user.id
   end
-
-  def post_members_list(data, current_user)
-    response = PostMember.post_members_list(data, current_user)
+  
+  def trending_list(data)
+    response = Post.trending_list(data, current_user)
     PostJob.perform_later response, current_user.id
+  end
+
+  def sync_akn(data)
+    response = Post.sync_ack(data, current_user)
+  end
+  
+  def near_me_posts(data)
+    response = Post.near_me_posts(data, current_user)
+    PostJob.perform_later response, current_user.id
+  end
+  
+  def post_comment(data)
+    response, broadcast_response = PostComment.post_comment(data, current_user)
+    PostJob.perform_later response, current_user.id
+    if broadcast_response.present?
+      json_obj = JSON.parse(response)
+      post_id  = json_obj['data']['post_comments'][0]['post_id']
+      PostJob.perform_later broadcast_response, '', post_id
+    end
   end
 
   def post_comments_list(data)
     response = PostComment.post_comments_list(data, current_user)
     PostJob.perform_later response, current_user.id
   end
+
+  def post_like(data)
+    response, resp_broadcast = PostLike.post_like(data, current_user)
+    PostJob.perform_later response, current_user.id
+    json_obj = JSON.parse(response)
+    post_id  = json_obj["data"]["post_like"]["post"]["id"]
+    PostJob.perform_later resp_broadcast, '', post_id
+  end
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+  
+  
+  def post_members_list(data, current_user)
+    response = PostMember.post_members_list(data, current_user)
+    PostJob.perform_later response, current_user.id
+  end
+
+  
 
   def post_likes_list(data)
     response = PostLike.post_likes_list(data, current_user)
@@ -113,10 +142,7 @@ class PostChannel < ApplicationCable::Channel
     PostJob.perform_later response, current_user.id
   end
 
-  def trending_list(data)
-    response = Post.trending_list(data, current_user)
-    PostJob.perform_later response, current_user.id
-  end
+  
 
   def related_posts(data)
     response = Post.related_posts(data, current_user)
@@ -128,9 +154,7 @@ class PostChannel < ApplicationCable::Channel
     PostJob.perform_later response, current_user.id
   end
 
-  def sync_akn(data)
-    response = Post.sync_ack(data, current_user)
-  end
+  
 
   def get_member_posts(data)
     response = Post.get_member_posts(data, current_user)
