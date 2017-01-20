@@ -237,24 +237,26 @@ class MemberProfile < ApplicationRecord
   end
 
   def self.get_profile(data, current_user)
-    begin
+    # begin
       data          = data.with_indifferent_access
       profile       = MemberProfile.find_by_id(data[:member_profile_id])
-      resp_data     = get_profile_response(profile, current_user)
+      # resp_data     = get_profile_response(profile, current_user)
+      resp_data     = profile.member_profile
       resp_status   = 1
       resp_message  = 'success'
       resp_errors   = ''
-    rescue Exception => e
-      resp_data     = ''
-      resp_status   = 0
-      paging_data   = ''
-      resp_message  = 'error'
-      resp_errors   = e
-    end
+    # rescue Exception => e
+    #   resp_data     = ''
+    #   resp_status   = 0
+    #   paging_data   = ''
+    #   resp_message  = 'error'
+    #   resp_errors   = e
+    # end
     resp_request_id = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
   end
   
+  # Not In Use
   def self.get_profile_response(profile, current_user)
     if profile.id == current_user.profile_id
       member_profile = profile.as_json(

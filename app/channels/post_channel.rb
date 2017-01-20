@@ -102,6 +102,16 @@ class PostChannel < ApplicationCable::Channel
     PostJob.perform_later resp_broadcast, '', post_id
   end
   
+  def event_list(data)
+    response = Event.event_list(data, current_user)
+    PostJob.perform_later response, current_user.id
+  end
+  
+  
+  
+  
+  
+  
   
   
   

@@ -160,7 +160,7 @@ class Event < ApplicationRecord
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
   end
 
-  def self.events_response(events, sync_token)
+  def self.events_response(events, sync_token=nil)
     events = events.as_json(
         only: [:id, :event_name, :member_profile_id, :location, :latitude, :longitude, :radius, :event_details, :is_frields_allowed, :is_public, :is_paid, :category_id, :event_type, :start_date, :end_date, :created_at, :updated_at],
         include:{
@@ -224,6 +224,17 @@ class Event < ApplicationRecord
       resp_errors     = e
     end
     resp_request_id   = data[:request_id]
+    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
+  end
+  
+  def self.event_list(data, current_user)
+    data = data.with_indifferent_access
+    events = Event.all
+    resp_data       = events_response(events)
+    resp_status     = 1
+    resp_message    = 'Event list'
+    resp_errors     = ''
+    resp_request_id = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
   end
 end
