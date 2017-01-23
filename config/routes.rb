@@ -22,6 +22,7 @@ Rails.application.routes.draw do
       resources :member_profiles, only:[] do
         collection do
           get 'get_profile'
+          get 'dropdown_data'
         end
       end
       

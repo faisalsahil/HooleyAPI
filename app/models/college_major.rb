@@ -1,0 +1,2 @@
+class CollegeMajor < ApplicationRecord
+end

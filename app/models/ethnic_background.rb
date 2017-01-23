@@ -1,0 +1,2 @@
+class EthnicBackground < ApplicationRecord
+end

@@ -13,6 +13,13 @@ class MemberProfile < ApplicationRecord
   has_many   :profile_interests
   belongs_to :country
   belongs_to :city
+  belongs_to :occupation
+  belongs_to :college_major
+  belongs_to :relationship_status
+  belongs_to :political_view
+  belongs_to :religion
+  belongs_to :language
+  belongs_to :ethnic_background
 
   accepts_nested_attributes_for :user, :profile_interests
 
@@ -77,7 +84,7 @@ class MemberProfile < ApplicationRecord
 
   def member_profile(auth_token=nil)
     member_profile = self.as_json(
-        only: [:id, :photo, :country_id, :city_id, :is_profile_public, :default_group_id, :gender, :dob, :account_type, :high_school, :is_age_visible, :gender, :current_city, :home_town, :occupation, :employer, :college, :college_major, :high_school, :organization, :hobbies, :relationship_status, :political_views, :religion, :languages, :ethnic_background,:contact_email, :contact_phone, :contact_website, :contact_address],
+        only: [:id, :photo, :country_id, :city_id, :is_profile_public, :default_group_id, :gender, :dob, :account_type, :high_school, :is_age_visible, :gender, :current_city, :home_town, :employer, :college, :high_school, :organization, :hobbies,:contact_email, :contact_phone, :contact_website, :contact_address],
         methods: [:posts_count, :followings_count, :followers_count],
         include: {
             user: {
@@ -90,6 +97,27 @@ class MemberProfile < ApplicationRecord
                 only: [:id, :country_name]
             },
             city:{
+                only:[:id, :name]
+            },
+            occupation:{
+                only:[:id, :name]
+            },
+            college_major:{
+                only:[:id, :name]
+            },
+            relationship_status:{
+                only:[:id, :name]
+            },
+            political_view:{
+                only:[:id, :name]
+            },
+            religion:{
+                only:[:id, :name]
+            },
+            language:{
+                only:[:id, :name]
+            },
+            ethnic_background:{
                 only:[:id, :name]
             }
         }
@@ -228,7 +256,6 @@ class MemberProfile < ApplicationRecord
     rescue Exception => e
       resp_data = ''
       resp_status = 0
-      paging_data = ''
       resp_message = 'error'
       resp_errors = e
     end
@@ -240,7 +267,6 @@ class MemberProfile < ApplicationRecord
     begin
       data          = data.with_indifferent_access
       profile       = MemberProfile.find_by_id(data[:member_profile_id])
-      # resp_data     = get_profile_response(profile, current_user)
       resp_data     = profile.member_profile
       resp_status   = 1
       resp_message  = 'success'
@@ -255,6 +281,47 @@ class MemberProfile < ApplicationRecord
     resp_request_id = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
   end
+  
+  def self.get_drop_down_data(data, current_user)
+    occupations          = Occupation.all
+    occupations = occupations.as_json(
+        only:[:id, :name]
+    )
+    college_majors       = CollegeMajor.all
+    college_majors = college_majors.as_json(
+             only:[:id, :name]
+    )
+    
+    relationship_status = RelationshipStatus.all
+    relationship_status = relationship_status.as_json(
+        only:[:id, :name]
+    )
+    political_views     = PoliticalView.all
+    political_views = political_views.as_json(
+        only:[:id, :name]
+    )
+    
+    religions            = Religion.all
+    religions = religions.as_json(
+        only:[:id, :name]
+    )
+    languages            = Language.all
+    languages = languages.as_json(
+        only:[:id, :name]
+    )
+    ethnic_backgrounds   = EthnicBackground.all
+    ethnic_backgrounds = ethnic_backgrounds.as_json(
+        only:[:id, :name]
+    )
+    resp_data       = {occupations: occupations, relationship_status: relationship_status, political_views: political_views, religions: religions,  languages: languages, ethnic_backgrounds: ethnic_backgrounds, college_majors: college_majors}.as_json
+    resp_status     = 1
+    resp_message    = 'success'
+    resp_errors     = ''
+    resp_request_id = ''
+    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
+  end
+  
+  
   
   
   

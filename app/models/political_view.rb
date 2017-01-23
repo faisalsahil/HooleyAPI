@@ -1,0 +1,2 @@
+class PoliticalView < ApplicationRecord
+end

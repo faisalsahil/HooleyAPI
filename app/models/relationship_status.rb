@@ -1,0 +1,2 @@
+class RelationshipStatus < ApplicationRecord
+end
