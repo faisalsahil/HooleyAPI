@@ -306,7 +306,7 @@ class Post < ApplicationRecord
   def self.newly_created_posts(current_user)
     begin
       last_subs_date = current_user.last_subscription_time
-      profile = current_user.profile
+      profile        = current_user.profile
       
       following_ids = profile.member_followings.where(following_status: AppConstants::ACCEPTED).pluck(:following_profile_id)
       following_ids << profile.id
