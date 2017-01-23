@@ -153,11 +153,9 @@ class User < ApplicationRecord
         user_session.session_status = 'closed'
         user_session.save!
       end
-
       current_user.current_sign_in_at = nil
       current_user.synced_datetime    = nil
       current_user.save!
-
       resp_status     = 1
       resp_message    = 'Logout successful.'
       resp_errors     = ''
@@ -165,7 +163,6 @@ class User < ApplicationRecord
     rescue Exception => e
       resp_data       = ''
       resp_status     = 0
-      paging_data     = ''
       resp_message    = 'error'
       resp_errors     = e
     end

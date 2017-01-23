@@ -237,7 +237,7 @@ class MemberProfile < ApplicationRecord
   end
 
   def self.get_profile(data, current_user)
-    # begin
+    begin
       data          = data.with_indifferent_access
       profile       = MemberProfile.find_by_id(data[:member_profile_id])
       # resp_data     = get_profile_response(profile, current_user)
@@ -245,74 +245,18 @@ class MemberProfile < ApplicationRecord
       resp_status   = 1
       resp_message  = 'success'
       resp_errors   = ''
-    # rescue Exception => e
-    #   resp_data     = ''
-    #   resp_status   = 0
-    #   paging_data   = ''
-    #   resp_message  = 'error'
-    #   resp_errors   = e
-    # end
+    rescue Exception => e
+      resp_data     = ''
+      resp_status   = 0
+      paging_data   = ''
+      resp_message  = 'error'
+      resp_errors   = e
+    end
     resp_request_id = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
   end
   
-  # Not In Use
-  def self.get_profile_response(profile, current_user)
-    if profile.id == current_user.profile_id
-      member_profile = profile.as_json(
-          only: [:id, :photo, :country_id, :city_id, :is_profile_public, :default_group_id, :gender, :dob, :account_type, :is_age_visible, :gender, :current_city, :home_town, :occupation, :employer, :college, :college_major, :high_school, :organization, :hobbies, :relationship_status, :political_views, :religion, :languages, :ethnic_background,:contact_email, :contact_phone, :contact_website, :contact_address],
-          methods: [:posts_count, :followings_count, :followers_count],
-          include: {
-              user: {
-                  only: [:id, :profile_id, :profile_type, :first_name, :email, :last_name, :phone]
-              },
-              profile_interests:{
-                  only:[:id, :name, :interest_type, :photo_url]
-              },
-              country: {
-                  only: [:id, :country_name],
-                  include:{
-                      cities: {
-                          only:[:id, :name, :code]
-                      }
-                  }
-              },
-              city:{
-                  only:[:id, :name]
-              }
-          }
-      )
-      {member_profile: member_profile}.as_json
-    else
-      member_profile = profile.to_xml(
-          only: [:id, :photo, :country_id, :city_id, :is_profile_public, :default_group_id, :gender, :dob, :account_type, :is_age_visible, :gender, :current_city, :home_town, :occupation, :employer, :college, :college_major, :high_school, :organization, :hobbies, :relationship_status, :political_views, :religion, :languages, :ethnic_background,:contact_email, :contact_phone, :contact_website, :contact_address],
-          methods: [:posts_count, :followings_count, :followers_count],
-          :procs => Proc.new { |options|
-            options[:builder].tag!('is_im_following', MemberProfile.is_following(profile, current_user))
-          },
-          include: {
-              user: {
-                  only: [:id, :profile_id, :profile_type, :first_name, :email, :last_name, :phone]
-              },
-              profile_interests:{
-                only:[:id, :name, :interest_type, :photo_url]
-              },
-              country: {
-                  only: [:id, :country_name],
-                  include:{
-                      cities: {
-                          only:[:id, :name, :code]
-                      }
-                  }
-              },
-              city:{
-                  only:[:id, :name]
-              }
-          }
-      )
-      Hash.from_xml(member_profile).as_json
-    end
-  end
+  
   
   def self.profile_timeline(data, current_user)
     begin

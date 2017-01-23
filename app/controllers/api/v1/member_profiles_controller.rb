@@ -15,5 +15,4 @@ class Api::V1::MemberProfilesController < Api::V1::ApiProtectedController
       return render json: resp_data
     end
   end
-
 end

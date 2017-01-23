@@ -24,9 +24,16 @@ Rails.application.routes.draw do
           get 'get_profile'
         end
       end
+      
+      resources :member_followings, only:[] do
+        collection do
+          get 'get_followers'
+        end
+      end
 
-      resources :roles, only: [:index]
-      resources :user_sessions do
+      resources :events, only:[:index, :create]
+      
+      resources :user_sessions, only:[] do
         collection do
           post :login
         end
