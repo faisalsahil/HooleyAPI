@@ -20,6 +20,7 @@ class Post < ApplicationRecord
   acts_as_mappable default_units: :kms, lat_column_name: :latitude, lng_column_name: :longitude
 
   validates :is_post_public, inclusion: {in: [true, false]}
+  validates_presence_of :event_id, presence: true
 
   after_commit :process_hashtags
   @@limit = 10
@@ -304,7 +305,7 @@ class Post < ApplicationRecord
   end
 
   def self.newly_created_posts(current_user)
-    # begin
+    begin
       last_subs_date = current_user.last_subscription_time
       profile        = current_user.profile
       
@@ -364,14 +365,14 @@ class Post < ApplicationRecord
         resp_errors     = ''
         JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
       end
-    # rescue Exception => e
-    #   resp_data       = ''
-    #   resp_status     = 0
-    #   paging_data     = ''
-    #   resp_message    = 'error'
-    #   resp_errors     = e
-    #   JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
-    # end
+    rescue Exception => e
+      resp_data       = ''
+      resp_status     = 0
+      paging_data     = ''
+      resp_message    = 'error'
+      resp_errors     = e
+      JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
+    end
   end
 
   def self.trending_list(data, current_user)
