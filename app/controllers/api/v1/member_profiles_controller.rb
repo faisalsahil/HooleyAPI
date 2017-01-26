@@ -11,7 +11,7 @@ class Api::V1::MemberProfilesController < ApplicationController
       response = MemberProfile.get_profile(params, user_session.user)
       render json: response
     else
-      resp_data = 'Invalid Token'
+      resp_data = {resp_data: {}, resp_status: 0, resp_message: 'Invalid Token', resp_error: 'error'}.as_json
       return render json: resp_data
     end
   end
@@ -25,7 +25,7 @@ class Api::V1::MemberProfilesController < ApplicationController
       response = MemberProfile.get_drop_down_data(params, user_session.user)
       render json: response
     else
-      resp_data = 'Invalid Token'
+      resp_data = {resp_data: {}, resp_status: 0, resp_message: 'Invalid Token', resp_error: 'error'}.as_json
       return render json: resp_data
     end
   end

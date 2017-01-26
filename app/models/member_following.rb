@@ -27,7 +27,7 @@ class MemberFollowing < ApplicationRecord
         resp_message  = 'success'
         resp_errors   = ''
       else
-        resp_data = []
+        resp_data = {}
         paging_data = nil
         resp_status = 0
         resp_message = 'error'

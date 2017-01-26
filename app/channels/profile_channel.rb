@@ -40,6 +40,11 @@ class ProfileChannel < ApplicationCable::Channel
     Event.event_sync_to_members(event_id, current_user)
   end
 
+  def show_event(data)
+    response = Event.show_event(data, current_user)
+    ProfileJob.perform_later response, current_user.id
+  end
+  
   def follow_member(data)
     response = MemberFollowing.follow_member(data, current_user)
     ProfileJob.perform_later response, current_user.id
@@ -67,8 +72,11 @@ class ProfileChannel < ApplicationCable::Channel
     response = MemberFollowing.get_following_members(data, current_user)
     ProfileJob.perform_later response, current_user.id
   end
-  
-  
+
+  # def event_search(data)
+  #   response = Event.event_search(data, current_user)
+  #   ProfileJob.perform_later response, current_user.id
+  # end
   
   
   
@@ -114,14 +122,6 @@ class ProfileChannel < ApplicationCable::Channel
     response = MemberFollowing.search_member(data, current_user)
     ProfileJob.perform_later response, current_user.id
   end
-
-  
-
-  
-  
-  
-  
-  
   
   def group_create(data)
     response = MemberGroup.group_create(data, current_user)
@@ -199,20 +199,11 @@ class ProfileChannel < ApplicationCable::Channel
   end
   
 
-  def event_search(data)
-    response = Event.event_search(data, current_user)
-    ProfileJob.perform_later response, current_user.id
-  end
-
   def search(data)
     response = MemberProfile.search(data, current_user)
     ProfileJob.perform_later response, current_user.id
   end
   
-  def show_event(data)
-    response = Event.show_event(data, current_user)
-    ProfileJob.perform_later response, current_user.id
-  end
 
   protected
   def find_verified_user

@@ -18,7 +18,7 @@ class Api::V1::MemberFollowingsController < ApplicationController
       response = MemberFollowing.get_followers(params, user_session.user)
       render json: response
     else
-      resp_data = 'Invalid Token'
+      resp_data = {resp_data: {}, resp_status: 0, resp_message: 'Invalid Token', resp_error: 'error'}.as_json
       return render json: resp_data
     end
   end
