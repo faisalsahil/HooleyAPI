@@ -3,11 +3,10 @@ class Api::V1::EventsController < ApplicationController
   def index
     params = {
         "auth_token": "111111111",
-        "member_profile_id": 3,
         "type": 'search',
         "keyword": 'chuburji pakistan',
         "location": '',
-        "date": '2016-06-13',
+        "date": '2017-01-26',
         "radius": 5,
         "latitude": "31.556216",
         "longitude": "74.294954",

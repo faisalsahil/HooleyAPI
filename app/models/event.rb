@@ -188,16 +188,16 @@ class Event < ApplicationRecord
         next_week_events    = events.where('Date(start_date) > ? AND Date(start_date) <= ?', Date.today + 1.day, Date.today + 1.week)
         upcoming_events     = events.where('Date(start_date) > ?', Date.today + 1.week)
 
-        today_events        = today_events.page(page.to_i).per_page(per_page.to_i)
+        today_events      = today_events.page(page.to_i).per_page(per_page.to_i)
         today_paging_data = JsonBuilder.get_paging_data(page, per_page, today_events)
 
-        a_day_after_events               = a_day_after_events.page(page.to_i).per_page(per_page.to_i)
+        a_day_after_events      = a_day_after_events.page(page.to_i).per_page(per_page.to_i)
         a_day_after_paging_data = JsonBuilder.get_paging_data(page, per_page, a_day_after_events)
 
-        next_week_events             = next_week_events.page(page.to_i).per_page(per_page.to_i)
+        next_week_events      = next_week_events.page(page.to_i).per_page(per_page.to_i)
         next_week_paging_data = JsonBuilder.get_paging_data(page, per_page, next_week_events)
         
-        upcoming_events             = upcoming_events.page(page.to_i).per_page(per_page.to_i)
+        upcoming_events      = upcoming_events.page(page.to_i).per_page(per_page.to_i)
         upcoming_paging_data = JsonBuilder.get_paging_data(page, per_page, upcoming_events)
         
         resp_data = event_list_response(today_events, a_day_after_events, next_week_events, upcoming_events, 'upcoming', today_paging_data, a_day_after_paging_data, next_week_paging_data, upcoming_paging_data)
@@ -257,16 +257,16 @@ class Event < ApplicationRecord
         next_week_events    = events.where('Date(start_date) > ? AND Date(start_date) <= ?', Date.today + 1.day, Date.today + 1.week)
         upcoming_events     = events.where('Date(start_date) > ?', Date.today + 1.week)
 
-        today_events        = today_events.page(page.to_i).per_page(per_page.to_i)
+        today_events      = today_events.page(page.to_i).per_page(per_page.to_i)
         today_paging_data = JsonBuilder.get_paging_data(page, per_page, today_events)
 
-        a_day_after_events               = a_day_after_events.page(page.to_i).per_page(per_page.to_i)
+        a_day_after_events      = a_day_after_events.page(page.to_i).per_page(per_page.to_i)
         a_day_after_paging_data = JsonBuilder.get_paging_data(page, per_page, a_day_after_events)
 
-        next_week_events             = next_week_events.page(page.to_i).per_page(per_page.to_i)
+        next_week_events      = next_week_events.page(page.to_i).per_page(per_page.to_i)
         next_week_paging_data = JsonBuilder.get_paging_data(page, per_page, next_week_events)
 
-        upcoming_events             = upcoming_events.page(page.to_i).per_page(per_page.to_i)
+        upcoming_events      = upcoming_events.page(page.to_i).per_page(per_page.to_i)
         upcoming_paging_data = JsonBuilder.get_paging_data(page, per_page, upcoming_events)
 
         resp_data = event_list_response(today_events, a_day_after_events, next_week_events, upcoming_events, 'upcoming', today_paging_data, a_day_after_paging_data, next_week_paging_data, upcoming_paging_data)
