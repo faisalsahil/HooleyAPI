@@ -73,12 +73,6 @@ class ProfileChannel < ApplicationCable::Channel
     ProfileJob.perform_later response, current_user.id
   end
 
-  # def event_search(data)
-  #   response = Event.event_search(data, current_user)
-  #   ProfileJob.perform_later response, current_user.id
-  # end
-  
-  
   
   
   

@@ -324,59 +324,6 @@ class Event < ApplicationRecord
     end
   end
   
-  def self.event_search(data, current_user)
-    begin
-      data     = data.with_indifferent_access
-      per_page = (data[:per_page] || @@limit).to_i
-      page     = (data[:page] || 1).to_i
-
-      events   = Event.all
-      if data[:search][:keyword].present?
-        events  = events.where("lower(name) like ? OR lower(description) like ?", "%#{data[:search][:keyword]}%".downcase, "%#{data[:search][:keyword]}%".downcase)
-      end
-
-      if data[:search][:country_id].present?
-        events  = events.where('country_id = ?', data[:search][:country_id])
-      end
-
-      if data[:search][:state_id].present?
-        events  = events.where('state_id = ?', data[:search][:state_id])
-      end
-
-      if data[:search][:sport_id].present?
-        event_records_ids = events.pluck(:id)
-        events            = Event.joins(:event_sports).where("event_sports.event_id IN (?) AND event_sports.sport_id = ?", event_records_ids, data[:search][:sport_id])
-      end
-
-      if data[:search][:sport_position_id].present?
-        event_records_ids = events.pluck(:id)
-        events            = Event.joins(:event_sports).where("event_sports.event_id IN (?) AND event_sports.sport_position_id = ?", event_records_ids, data[:search][:sport_position_id])
-      end
-
-      if events.present?
-        events            = events.page(page.to_i).per_page(per_page.to_i)
-        paging_data       = JsonBuilder.get_paging_data(page, per_page, events)
-        resp_data       = {events: events}
-        resp_status     = 1
-        resp_message    = 'Event list'
-        resp_errors     = ''
-      else
-        resp_data       = ''
-        resp_status     = 0
-        paging_data     = nil
-        resp_message    = 'error'
-        resp_errors     = 'No Record found'
-      end
-    rescue Exception => e
-      resp_data       = ''
-      resp_status     = 0
-      paging_data     = nil
-      resp_message    = 'error'
-      resp_errors     = e
-    end
-    resp_request_id   = data[:request_id]
-    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
-  end
 end
 
 # == Schema Information
