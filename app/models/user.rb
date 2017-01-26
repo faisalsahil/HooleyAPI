@@ -25,7 +25,7 @@ class User < ApplicationRecord
                   if: :published?
 
   pg_search_scope :search_by_title,
-    against: [:first_name, :last_name],
+    against: [:first_name, :last_name, :email],
     using: {
         tsearch: {
             any_word: true,
