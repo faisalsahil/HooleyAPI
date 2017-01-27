@@ -155,7 +155,6 @@ class Event < ApplicationRecord
     rescue Exception => e
       resp_data       = ''
       resp_status     = 0
-      paging_data     = ''
       resp_message    = 'error'
       resp_errors     = e
     end
@@ -180,7 +179,7 @@ class Event < ApplicationRecord
       per_page = (data[:per_page] || @@limit).to_i
       page     = (data[:page] || 1).to_i
         
-      if data[:type] == 'upcoming'
+      if data[:type].present? && data[:type] == 'upcoming'
         # List
         events              = Event.where('Date(start_date)  >= ?', Date.today)
         today_events        = events.where('Date(start_date) = ?',  Date.today)
@@ -224,9 +223,9 @@ class Event < ApplicationRecord
         resp_data = event_list_response(yesterday_events, a_day_before_events, last_week_events, previous_events, 'past', yesterday_paging_data, a_day_before_paging_data, last_week_paging_data, previous_paging_data)
       elsif data[:type].present? && data[:type] == 'search'
         # Search
-        events  = Event.all
+        # events  = Event.all
         if data[:keyword].present?
-          events = events.search_by_title(data[:keyword])
+          events = Event.search_by_title(data[:keyword])
         end
         
         if data[:date].present?
@@ -324,6 +323,92 @@ class Event < ApplicationRecord
     end
   end
   
+  def self.event_list_horizontal(data, current_user)
+    begin
+      data  =  data.with_indifferent_access
+      
+      if data[:list_type].present? && data[:list_type]    == 'day'
+        response = day_event_list(data)
+      elsif data[:list_type].present? && data[:list_type] == 'np_day'
+        response = day_event_list(data)
+      elsif data[:list_type].present? && data[:list_type] == 'week'
+        response = day_event_list(data)
+      elsif data[:list_type].present? && data[:list_type] == 'all'
+        response = day_event_list(data)
+      end
+    rescue Exception => e
+      resp_data       = ''
+      resp_status     = 0
+      resp_message    = 'error'
+      resp_errors     = e
+      resp_request_id   = data[:request_id]
+      JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
+    end
+  end
+  
+  def self.day_event_list(data)
+    per_page = (data[:per_page] || @@limit).to_i
+    page     = (data[:page] || 1).to_i
+    
+    if data[:type] == 'upcoming'
+      today_events  = Event.where('Date(start_date) = ?',  Date.today)
+      today_events  =  today_events.page(page.to_i).per_page(per_page.to_i)
+      paging_data   =  JsonBuilder.get_paging_data(page, per_page, today_events)
+      today_events  =  today_events.as_json(
+          only:[:id, :event_name, :event_details, :start_date, :end_date, :location]
+      )
+      response        = {events: today_events, paging_data: paging_data}.as_json
+      resp_data       = {today_events: response}.as_json
+      resp_status     = 1
+      resp_message    = 'Event List'
+      resp_errors     = ''
+      resp_request_id = ''
+      JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
+    elsif data[:type] == 'past'
+      yesterday_events  =  Event.where('Date(start_date) = ?',  Date.today - 1.day)
+      yesterday_events  =  yesterday_events.page(page.to_i).per_page(per_page.to_i)
+      paging_data       =  JsonBuilder.get_paging_data(page, per_page, yesterday_events)
+      yesterday_events  =  yesterday_events.as_json(
+          only:[:id, :event_name, :event_details, :start_date, :end_date, :location]
+      )
+      response        = {events: yesterday_events, paging_data: paging_data}.as_json
+      resp_data       = {yesterday_events: response}.as_json
+      resp_status     = 1
+      resp_message    = 'Event List'
+      resp_errors     = ''
+      resp_request_id = ''
+      JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
+    elsif data[:type] == 'search'
+      if data[:keyword].present?
+        events = Event.search_by_title(data[:keyword])
+      end
+  
+      if data[:date].present?
+        events = events.where('Date(start_date) = ?', data[:date])
+      end
+  
+      if data[:location].present?
+        events = events.where('lower(location) like ?', data[:location])
+      end
+  
+      if data[:radius].present? && data[:latitude].present? && data[:longitude].present?
+        events = events.within(data[:radius], :origin => [data[:latitude], data[:longitude]])
+      end
+  
+      if data[:category_id].present?
+        events = events.where(category_id: data[:category_id])
+      end
+  
+      if data[:is_paid].present?
+        if data[:is_paid] == 'free'
+          events = events.where(is_paid: false)
+        elsif data[:is_paid] == 'paid'
+          events = events.where(is_paid: true)
+        end
+      end
+      today_events        = events.where('Date(start_date) = ?',  Date.today)
+    end
+  end
 end
 
 # == Schema Information

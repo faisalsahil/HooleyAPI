@@ -32,7 +32,11 @@ Rails.application.routes.draw do
         end
       end
 
-      resources :events, only:[:index, :create]
+      resources :events, only:[:index] do
+        collection do
+          get 'event_list_horizontal'
+        end
+      end
       
       resources :user_sessions, only:[] do
         collection do
