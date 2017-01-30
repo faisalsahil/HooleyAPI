@@ -46,4 +46,23 @@ class Api::V1::MemberProfilesController < ApplicationController
       return render json: resp_data
     end
   end
+
+  def update_user_location
+    # params = {
+    #     "auth_token":  "111111111",
+    #     "member_profile": {
+    #         "latitude":  44.44,
+    #         "longitude": 555.555
+    #     }
+    # }
+  
+    user_session = UserSession.find_by_auth_token(params[:auth_token])
+    if user_session.present?
+      resp_data = MemberProfile.update_user_location(params, user_session.user)
+      return render json: resp_data
+    else
+      resp_data = {resp_data: {}, resp_status: 0, resp_message: 'Invalid Token', resp_error: 'error'}.as_json
+      return render json: resp_data
+    end
+  end
 end

@@ -24,6 +24,7 @@ Rails.application.routes.draw do
           get 'get_profile'
           get 'dropdown_data'
           get 'profile_timeline'
+          post 'update_user_location'
         end
       end
       

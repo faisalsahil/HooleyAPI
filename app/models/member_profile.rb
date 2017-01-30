@@ -348,6 +348,32 @@ class MemberProfile < ApplicationRecord
     resp_request_id = data[:request_id] if data[:request_id].present?
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
   end
+
+  def self.update_user_location(data, current_user)
+    begin
+      data    = data.with_indifferent_access
+      profile = current_user.profile
+      if profile.update_attributes(data[:member_profile])
+        resp_data       = {}
+        resp_status     = 1
+        resp_message    = 'success'
+        resp_errors     = ''
+      else
+        resp_data       = {}
+        resp_status     = 0
+        resp_message    = 'error'
+        resp_errors     = error_messages(profile)
+      end
+    rescue Exception => e
+      resp_data       = {}
+      resp_status     = 0
+      paging_data     = ''
+      resp_message    = 'error'
+      resp_errors     = e
+    end
+    resp_request_id   = data[:request_id]
+    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
+  end
 end
 
 
