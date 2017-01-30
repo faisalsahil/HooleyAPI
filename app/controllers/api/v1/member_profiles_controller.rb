@@ -16,6 +16,23 @@ class Api::V1::MemberProfilesController < ApplicationController
     end
   end
   
+  def profile_timeline
+    # params = {
+    #     "auth_token": "111111111",
+    #     "page": 1,
+    #     "per_page": 10,
+    #     "member_profile_id": 3
+    # }
+    user_session = UserSession.find_by_auth_token(params[:auth_token])
+    if user_session.present?
+      response = MemberProfile.profile_timeline(params, user_session.user)
+      render json: response
+    else
+      resp_data = {resp_data: {}, resp_status: 0, resp_message: 'Invalid Token', resp_error: 'error'}.as_json
+      return render json: resp_data
+    end
+  end
+  
   def dropdown_data
     # params = {
     #     "auth_token": "111111111"

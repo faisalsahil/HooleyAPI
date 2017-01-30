@@ -23,6 +23,7 @@ Rails.application.routes.draw do
         collection do
           get 'get_profile'
           get 'dropdown_data'
+          get 'profile_timeline'
         end
       end
       

@@ -629,6 +629,82 @@ class Post < ApplicationRecord
     resp_request_id   = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
   end
+
+  def self.timeline_posts_array_response(posts, profile, current_user)
+    @@current_profile  = current_user.profile
+    posts = posts.as_json(
+        ony: [:id, :post_title, :post_description, :datetime, :is_post_public, :is_deleted, :created_at, :updated_at, :post_type, :location, :latitude, :longitude],
+        methods: [:likes_count, :comments_count, :liked_by_me],
+        include:{
+            member_profile: {
+                only: [:id, :photo, :country_id, :is_profile_public, :gender],
+                include: {
+                    user: {
+                        only: [:id, :first_name, :last_name]
+                    }
+                }
+            },
+            event:{
+                only:[:id, :event_name]
+            },
+            recent_post_likes: {
+                only: [:id, :created_at, :updated_at],
+                include: {
+                    member_profile: {
+                        only: [:id, :photo],
+                        include: {
+                            user: {
+                                only: [:id, :first_name, :last_name]
+                            }
+                        }
+                    }
+                }
+            },
+            recent_post_comments: {
+                only: [:id, :post_comment],
+                methods:[:is_co_host_or_host],
+                include: {
+                    member_profile: {
+                        only: [:id, :photo],
+                        include: {
+                            user: {
+                                only: [:id, :first_name, :last_name],
+                            }
+                        }
+                    }
+                }
+            },
+            post_attachments: {
+                only: [:id, :attachment_url, :thumbnail_url, :created_at, :updated_at, :attachment_type],
+                include:{
+                    post_photo_users:{
+                        only:[:id, :x_coordinate, :y_coordinate, :member_profile_id, :post_attachment_id],
+                        include: {
+                            member_profile: {
+                                only: [:id],
+                                include: {
+                                    user: {
+                                        only: [:id, :first_name, :last_name]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    )
+    is_following = MemberProfile.is_following(profile, current_user)
+    member_profile = profile.as_json(
+        only: [:id, :photo, :country_id, :is_profile_public, :gender],
+        include: {
+            user: {
+                only: [:id, :first_name, :last_name]
+            }
+        }
+    ).merge!(is_im_following: is_following)
+    {posts: posts, member_profile: member_profile}.as_json
+  end
 end
 
 # == Schema Information

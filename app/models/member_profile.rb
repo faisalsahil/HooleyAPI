@@ -319,6 +319,35 @@ class MemberProfile < ApplicationRecord
     end
     error_string
   end
+
+  def self.profile_timeline(data, current_user)
+    begin
+      data         = data.with_indifferent_access
+      per_page     = (data[:per_page] || @@limit).to_i
+      page         = (data[:page] || 1).to_i
+    
+      profile      = MemberProfile.find_by_id(data[:member_profile_id])
+      posts        = profile.posts
+      
+      posts         = posts.order("created_at DESC")
+      posts         = posts.page(page.to_i).per_page(per_page.to_i)
+    
+      paging_data   = JsonBuilder.get_paging_data(page, per_page, posts)
+      resp_data     = Post.timeline_posts_array_response(posts, profile, current_user)
+      resp_status   = 1
+      resp_message  = 'TimeLine'
+      resp_errors   = ''
+    rescue Exception => e
+      resp_data    = ''
+      resp_status  = 0
+      paging_data  = ''
+      resp_message = 'error'
+      resp_errors  = e
+    end
+    resp_request_id = ''
+    resp_request_id = data[:request_id] if data[:request_id].present?
+    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
+  end
 end
 
 
