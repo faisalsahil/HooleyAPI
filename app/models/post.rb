@@ -274,8 +274,11 @@ class Post < ApplicationRecord
       profile = current_user.profile
       following_ids= profile.member_followings.where(following_status: AppConstants::ACCEPTED).pluck(:following_profile_id)
 
-      posts = Post.where("member_profile_id = ? OR is_post_public = ? OR member_profile_id IN (?) OR is_deleted = ?", current_user.profile_id, true, following_ids, false)
-
+      # posts = Post.where("member_profile_id = ? OR is_post_public = ? OR member_profile_id IN (?) OR is_deleted = ?", current_user.profile_id, true, following_ids, false)
+      following_ids << profile.id
+      post_ids      = PostMember.where(member_profile_id: profile.id).pluck(:post_id)
+      posts = Post.where("(member_profile_id IN (?) OR id IN (?)) AND is_deleted = ?", following_ids, post_ids, false).distinct
+      
       if data[:max_post_date].present?
         posts = posts.where("created_at > ?", max_post_date)
       elsif data[:min_post_date].present?
@@ -310,8 +313,8 @@ class Post < ApplicationRecord
       
       following_ids = profile.member_followings.where(following_status: AppConstants::ACCEPTED).pluck(:following_profile_id)
       following_ids << profile.id
-      poll_ids      = PostMember.where(member_profile_id: profile.id).pluck(:post_id)
-      posts = Post.where("(member_profile_id IN (?) OR id IN (?)) AND is_deleted = ?", following_ids, poll_ids, false).distinct
+      post_ids      = PostMember.where(member_profile_id: profile.id).pluck(:post_id)
+      posts = Post.where("(member_profile_id IN (?) OR id IN (?)) AND is_deleted = ?", following_ids, post_ids, false).distinct
       
       if current_user.current_sign_in_at.blank? && last_subs_date.present? && TimeDifference.between(Time.now, last_subs_date).in_minutes < 30
         if current_user.synced_datetime.present?
