@@ -129,45 +129,9 @@ class PostChannel < ApplicationCable::Channel
     response = PostMember.post_members_list(data, current_user)
     PostJob.perform_later response, current_user.id
   end
-
   
-
   def post_likes_list(data)
     response = PostLike.post_likes_list(data, current_user)
-    PostJob.perform_later response, current_user.id
-  end
-
-  def delete_post_comment(data)
-    response = PostComment.delete_post_comment(data, current_user)
-    PostJob.perform_later response, current_user.id
-  end
-
-  def report_post(data)
-    response = PostComment.report_post(data, current_user)
-    PostJob.perform_later response, current_user.id
-  end
-
-  def report_post_comment(data)
-    response = PostComment.report_post_comment(data, current_user)
-    PostJob.perform_later response, current_user.id
-  end
-
-  
-
-  def related_posts(data)
-    response = Post.related_posts(data, current_user)
-    PostJob.perform_later response, current_user.id
-  end
-
-  def discover(data)
-    response = Post.discover(data, current_user)
-    PostJob.perform_later response, current_user.id
-  end
-
-  
-
-  def get_member_posts(data)
-    response = Post.get_member_posts(data, current_user)
     PostJob.perform_later response, current_user.id
   end
 
@@ -175,33 +139,7 @@ class PostChannel < ApplicationCable::Channel
     response = Hashtag.auto_complete(data, current_user)
     PostJob.perform_later response, current_user.id
   end
-
-  def create_album(data)
-    response = UserAlbum.create_album(data, current_user)
-    PostJob.perform_later response, current_user.id
-  end
-
-  def edit_album(data)
-    response = UserAlbum.edit_album(data, current_user)
-    PostJob.perform_later response, current_user.id
-  end
-
-  def album_list(data)
-    response = UserAlbum.album_list(data, current_user)
-    PostJob.perform_later response, current_user.id
-  end
-
-  def show_album(data)
-    response = UserAlbum.show_album(data, current_user)
-    PostJob.perform_later response, current_user.id
-  end
-
-  def add_images_to_album(data)
-    response = UserAlbum.add_images_to_album(data, current_user)
-    PostJob.perform_later response, current_user.id
-  end
-
-
+  
   protected
   def find_verified_user
     user_session = UserSession.find_by_auth_token(params[:auth_token])

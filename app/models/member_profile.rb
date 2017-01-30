@@ -3,13 +3,10 @@ class MemberProfile < ApplicationRecord
   include PgSearch
 
   has_one    :user, as: :profile
-  # has_many   :synchronizations
   has_many   :synchronizations, as: :media
   has_many   :member_followings
-  has_many   :member_groups
   has_many   :posts
   has_many   :events
-  has_many   :user_albums
   has_many   :profile_interests
   belongs_to :country
   belongs_to :city
@@ -75,13 +72,6 @@ class MemberProfile < ApplicationRecord
     end
   end
 
-  def create_default_group
-    member_group = self.member_groups.build(group_name: AppConstants::TIMELINE)
-    member_group.save!
-    self.default_group_id = member_group.id
-    self.save!
-  end
-
   def member_profile(auth_token=nil)
     member_profile = self.as_json(
         only: [:id, :photo, :country_id, :city_id, :is_profile_public, :default_group_id, :gender, :dob, :account_type, :high_school, :is_age_visible, :gender, :current_city, :home_town, :employer, :college, :high_school, :organization, :hobbies,:contact_email, :contact_phone, :contact_website, :contact_address],
@@ -130,27 +120,15 @@ class MemberProfile < ApplicationRecord
     data = data.with_indifferent_access
     member_profile = MemberProfile.new
     member_profile.attributes = data[:member_profile]
-    # status, message = validate_email_and_password(data)
-    # if !status.present?
-      if member_profile.save
-        # Create default album for user
-        album = member_profile.user_albums.build
-        album.name = "Timeline"
-        album.default_album = true
-        album.save!
-        resp_status = 1
-        resp_message = 'Please check your email and verify your account.'
-        resp_errors = ''
-      else
-        resp_status = 0
-        resp_message = 'Errors'
-        resp_errors = error_messages(member_profile)
-      end
-    # else
-    #   resp_status = 0
-    #   resp_message = 'Errors'
-    #   resp_errors = message
-    # end
+    if member_profile.save
+      resp_status = 1
+      resp_message = 'Please check your email and verify your account.'
+      resp_errors = ''
+    else
+      resp_status = 0
+      resp_message = 'Errors'
+      resp_errors = error_messages(member_profile)
+    end
     resp_data = ''
     resp_request_id = data[:request_id] if data && data[:request_id].present?
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
@@ -202,11 +180,6 @@ class MemberProfile < ApplicationRecord
         member_profile.user.password_confirmation = password
         member_profile.is_profile_public = true #should be in migration default false : Later
         if member_profile.save
-          album = member_profile.user_albums.build
-          album.name = "TimeLine"
-          album.default_album = true
-          album.save!
-
           user = member_profile.user
           user.current_sign_in_at = Time.now
           user.synced_datetime = nil
@@ -232,6 +205,24 @@ class MemberProfile < ApplicationRecord
       user.save!
       social_sign_up_response(data, auth.user.profile)
     end
+  end
+
+  def self.social_sign_up_response(data, profile)
+    user = profile.user
+    user_sessions = UserSession.where("device_uuid = ? AND user_id != ?", data[:user_session][:device_uuid], user.id)
+    user_sessions.destroy_all if user_sessions.present?
+  
+    user_session = user.user_sessions.where(device_uuid: data[:user_session][:device_uuid]).try(:first) || user.user_sessions.build(data[:user_session])
+    user_session.auth_token = SecureRandom.hex(100)
+    user_session.session_status = 'open'
+    user_session.save!
+  
+    resp_data = profile.member_profile(user_session.auth_token)
+    resp_request_id = data[:request_id]
+    resp_status = 1
+    resp_message = 'success'
+    resp_errors = ''
+    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
   end
 
   def self.update(data, current_user)
@@ -320,64 +311,6 @@ class MemberProfile < ApplicationRecord
     resp_request_id = ''
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
   end
-  
-  
-  
-  
-  
-  def self.profile_timeline(data, current_user)
-    begin
-      data         = data.with_indifferent_access
-      per_page     = (data[:per_page] || @@limit).to_i
-      page         = (data[:page] || 1).to_i
-      
-      profile      = MemberProfile.find_by_id(data[:member_profile_id])
-      posts        = profile.posts
-      if posts.present?
-        posts         = posts.order("created_at DESC")
-        posts         = posts.page(page.to_i).per_page(per_page.to_i)
-        paging_data   = JsonBuilder.get_paging_data(page, per_page, posts)
-        resp_data     = Post.timeline_posts_array_response(posts, profile, current_user)
-        resp_status   = 1
-        resp_message  = 'TimeLine'
-        resp_errors   = ''
-      else
-        resp_data = ''
-        resp_status = 0
-        resp_message = 'No Post Found.'
-        resp_errors = ''
-        paging_data = ''
-      end
-    rescue Exception => e
-      resp_data    = ''
-      resp_status  = 0
-      paging_data  = ''
-      resp_message = 'error'
-      resp_errors  = e
-    end
-    resp_request_id = data[:request_id]
-    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
-  end
-
-  def self.image_upload(data, current_user)
-    begin
-      data = data.with_indifferent_access
-      profile = current_user.profile
-      profile.update_attributes(data[:member_profile])
-      resp_data = profile.member_profile
-      resp_status = 1
-      resp_message = 'success'
-      resp_errors = ''
-    rescue Exception => e
-      resp_data = ''
-      resp_status = 0
-      paging_data = ''
-      resp_message = 'error'
-      resp_errors = e
-    end
-    resp_request_id = data[:request_id]
-    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
-  end
 
   def self.error_messages(error_array)
     error_string = ''
@@ -385,264 +318,6 @@ class MemberProfile < ApplicationRecord
       error_string += message + ', '
     end
     error_string
-  end
-
-  def self.social_sign_up_response(data, profile)
-    user = profile.user
-    user_sessions = UserSession.where("device_uuid = ? AND user_id != ?", data[:user_session][:device_uuid], user.id)
-    user_sessions.destroy_all if user_sessions.present?
-
-    user_session = user.user_sessions.where(device_uuid: data[:user_session][:device_uuid]).try(:first) || user.user_sessions.build(data[:user_session])
-    user_session.auth_token = SecureRandom.hex(100)
-    user_session.session_status = 'open'
-    user_session.save!
-
-    resp_data = profile.member_profile(user_session.auth_token)
-    resp_request_id = data[:request_id]
-    resp_status = 1
-    resp_message = 'success'
-    resp_errors = ''
-    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
-  end
-  
-  def self.auto_complete_followers(data, current_user)
-    begin
-      data = data.with_indifferent_access
-      if data[:search_key].present?
-        profile = current_user.profile
-        member_followings = MemberFollowing.where(following_status: AppConstants::ACCEPTED, following_profile_id: profile.id, is_deleted: false) if profile.present?
-        profile_ids = member_followings.pluck(:member_profile_id)
-        users = User.where("first_name like :q or last_name like :q or email like :q", q: "%#{data[:search_key]}%")
-        searched_profile_ids = users.where(profile_id: profile_ids).pluck(:profile_id)
-        member_profiles = MemberProfile.where(id: searched_profile_ids).limit(5)
-        member_profiles = member_profiles.as_json(
-            only: [:id, :about, :phone, :photo, :country_id, :is_profile_public, :gender],
-            include: {
-                user: {
-                    only: [:id, :profile_id, :profile_type, :first_name, :email, :last_name],
-
-                }
-            }
-        )
-
-        resp_data = {member_profiles: member_profiles}.as_json
-        resp_status = 1
-        resp_message = 'success'
-        resp_errors = ''
-      else
-        resp_data = ''
-        resp_status = 0
-        resp_message = 'error'
-        resp_errors = 'No Key Found'
-      end
-    rescue Exception => e
-      resp_data = ''
-      resp_status = 0
-      paging_data = ''
-      resp_message = 'error'
-      resp_errors = e
-    end
-
-    resp_request_id = data[:request_id]
-    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
-  end
-
-  def self.add_sport_abbreviations(data, current_user)
-    begin
-      data = data.with_indifferent_access
-      if data[:member_profile].present?
-        profile = current_user.profile
-        profile.attributes = data[:member_profile]
-
-        profile.save
-        resp_data = ''
-        resp_status = 1
-        resp_message = 'success'
-        resp_errors = ''
-      else
-        resp_data = ''
-        resp_status = 0
-        resp_message = 'error'
-        resp_errors = current_user.errors
-      end
-    rescue Exception => e
-      resp_data = ''
-      resp_status = 0
-      paging_data = ''
-      resp_message = 'error'
-      resp_errors = e
-    end
-
-    resp_request_id = data[:request_id]
-    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
-  end
-
-  def self.user_list(current_user, data)
-    data = data.with_indifferent_access
-    users = User.where(role_id: data[:role][:role_id])
-    if users.present?
-      resp_data = user_array_response(users)
-      resp_status = 1
-      resp_request_id = data[:request_id]
-      resp_message = 'Users list'
-      resp_errors = ''
-    else
-      resp_data = user_array_response(users)
-      resp_status = 0
-      resp_request_id = data[:request_id]
-      resp_message = 'Record not found'
-      resp_errors = ''
-    end
-
-    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
-  end
-
-  def self.user_array_response(users)
-    users = users.as_json(
-        {
-            only: [:id, :email, :profile_type, :phone, :first_name, :last_name, :role_id]
-        }
-    )
-    {users: users}.as_json
-  end
-  
-  def self.country_data_list(data, current_user)
-    begin
-      data = data.with_indifferent_access
-      countries = Country.all
-      countries = countries.as_json(
-          only: [:id, :country_name, :iso, :iso2],
-          include: {
-              cities: {
-                  only: [:id, :name]
-              }
-          }
-      )
-
-      currencies = Currency.all
-      resp_data = {countries: countries, currencies: currencies}.as_json
-      resp_status = 1
-      resp_message = 'success'
-      resp_errors = ''
-    rescue Exception => e
-      resp_data = ''
-      resp_status = 0
-      paging_data = ''
-      resp_message = 'error'
-      resp_errors = e
-    end
-
-    resp_request_id = data[:request_id]
-    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
-
-  end
-
-  def self.search(data, current_user)
-    begin
-      data        = data.with_indifferent_access
-      per_page    = (data[:per_page] || @@limit).to_i
-      page        = (data[:page] || 1).to_i
-      type        = data[:type]
-      role        = Role.find_by_name(type) # name should be in const file
-      users       = User.where(role_id: role.id)
-      profile_ids = users.pluck(:profile_id)
-
-      if profile_ids.present?
-        profiles = MemberProfile.where(id: profile_ids)
-
-        if data[:search][:name].present?
-          profile_ids = users.where('lower(first_name) like ? OR lower(last_name) like ?', "%#{data[:search][:name]}%".downcase, "%#{data[:search][:name]}%".downcase).pluck(:profile_id)
-          profiles    = MemberProfile.where(id: profile_ids)
-        end
-
-        if data[:search][:gender].present?
-          profiles = profiles.where('lower(gender) = ? ', data[:search][:gender].downcase)
-        end
-
-        if data[:search][:city_id].present?
-          profiles = profiles.where('city_id = ?', data[:search][:city_id])
-        end
-
-        if data[:search][:country_id].present?
-          profiles = profiles.where('country_id = ?', data[:search][:country_id])
-        end
-        
-        records = profiles
-
-        if records.present?
-          records      = records.page(page.to_i).per_page(per_page.to_i)
-          paging_data  = JsonBuilder.get_paging_data(page, per_page, records)
-          resp_data    = Search_records_response(records, type)
-          resp_status  = 1
-          resp_message = type + ' ' + 'list'
-          resp_errors  = ''
-        else
-          resp_data    = ''
-          resp_status  = 0
-          resp_message = 'error'
-          paging_data  = nil
-          resp_errors  = 'No Record found'
-        end
-      else
-        resp_data      = ''
-        resp_status    = 0
-        resp_message   = 'error'
-        resp_errors    = 'No Key found'
-        paging_data    = nil
-      end
-    rescue Exception => e
-      resp_data        = ''
-      resp_status      = 0
-      paging_data      = nil
-      resp_message     = 'error'
-      resp_errors      = e
-    end
-    resp_request_id    = data[:request_id]
-    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
-  end
-
-  def self.Search_records_response(records, type)
-    records = records.as_json(
-        only: [:id, :photo, :is_profile_public, :gender, :account_type],
-        include: {
-            country: {
-                only: [:id, :country_name]
-            },
-            city: {
-                only: [:id, :name]
-            },
-            user: {
-                only: [:id, :first_name, :last_name, :email]
-            }
-        }
-    )
-
-    {"#{type}": records}.as_json
-  end
-  
-  def self.update_user_location(data, current_user)
-    begin
-      data          = data.with_indifferent_access
-      profile       = current_user.profile
-      if profile.update_attributes(data[:member_profile])
-        resp_data    = {}
-        resp_status  = 1
-        resp_message = 'success'
-        resp_errors  = ''
-      else
-        resp_data    = ''
-        resp_status  = 0
-        resp_message = 'error'
-        resp_errors  = error_messages(profile)
-      end
-    rescue Exception => e
-      resp_data     = ''
-      resp_status   = 0
-      resp_message  = 'error'
-      resp_errors   = e
-    end
-    resp_request_id = data[:request_id]
-    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
   end
 end
 

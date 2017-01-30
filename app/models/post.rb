@@ -13,7 +13,6 @@ class Post < ApplicationRecord
   has_many   :recent_post_likes,    -> { order(created_at: :desc).limit(10) }, class_name: 'PostLike'
   has_many   :post_users,         dependent: :destroy
   has_many   :post_attachments,   dependent: :destroy
-  has_many   :album_images,       dependent: :destroy
 
   accepts_nested_attributes_for :post_videos, :post_attachments, :post_members, :post_users
 
