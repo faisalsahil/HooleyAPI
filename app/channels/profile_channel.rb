@@ -46,8 +46,12 @@ class ProfileChannel < ApplicationCable::Channel
   end
   
   def follow_member(data)
-    response = MemberFollowing.follow_member(data, current_user)
+    response, is_accepted = MemberFollowing.follow_member(data, current_user)
     ProfileJob.perform_later response, current_user.id
+    if is_accepted
+      response = Post.newly_created_posts(current_user)
+      PostJob.perform_later response, current_user.id
+    end
   end
   
   def get_following_requests(data)
