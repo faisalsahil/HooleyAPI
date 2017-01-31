@@ -13,7 +13,7 @@ class MemberFollowing < ApplicationRecord
       if data[:search_key].present?
         member_followings = MemberFollowing.where(following_status: AppConstants::ACCEPTED, following_profile_id: profile.id, is_deleted: false) if profile.present?
         profile_ids  =  member_followings.pluck(:member_profile_id)
-        users = User.where("lower(first_name) like :q or lower(last_name) like :q or lower(email) like :q", q: "%#{data[:member_profile][:search_key]}%".downcase)
+        users = User.where("lower(first_name) like :q or lower(last_name) like :q or lower(email) like :q or lower(username) like :q", q: "%#{data[:search_key]}%".downcase)
         # users   = User.search_by_title(data[:search_key])
         searched_profile_ids = users.where(profile_id: profile_ids).pluck(:profile_id) if users.present?
         member_followings = MemberFollowing.where(following_status: AppConstants::ACCEPTED, following_profile_id: profile.id, is_deleted: false, member_profile_id: searched_profile_ids) if searched_profile_ids.present?
