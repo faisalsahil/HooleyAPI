@@ -488,6 +488,8 @@ class Post < ApplicationRecord
             type:  'MemberProfile',
             id:    profile.id,
             photo: profile.photo,
+            is_im_following:  MemberProfile.is_following(profile, current_user),
+            is_my_follower:   MemberProfile.is_follower(profile, current_user),
             user: {
                 id:         user.id,
                 first_name: user.first_name,
@@ -714,8 +716,8 @@ class Post < ApplicationRecord
       data       = data.with_indifferent_access
       per_page   = (data[:per_page] || @@limit).to_i
       page       = (data[:page] || 1).to_i
-      search_key = data[:search][:search_key]
-      if data[:search][:type].present? && data[:search][:type] == 'Member'
+      search_key = data[:search_key]
+      if data[:type].present? && data[:type] == 'Member'
         if search_key.present?
           users  =  User.search_by_title(search_key)
         else
@@ -726,7 +728,7 @@ class Post < ApplicationRecord
         member_profiles = member_profiles.page(page.to_i).per_page(per_page.to_i)
         paging_data     = JsonBuilder.get_paging_data(page, per_page, member_profiles)
         resp_data       = trending_api_loop_response([], [], true, current_user, member_profiles)
-      elsif data[:search][:type].present? && data[:search][:type] == 'Post'
+      elsif data[:type].present? && data[:type] == 'Post'
         if search_key.present?
           posts  = Post.search_by_title(search_key)
         else
@@ -735,7 +737,7 @@ class Post < ApplicationRecord
         posts       = posts.page(page.to_i).per_page(per_page.to_i)
         paging_data = JsonBuilder.get_paging_data(page, per_page, posts)
         resp_data   = trending_api_loop_response(posts, [], true, current_user, [])
-      elsif data[:search][:type].present? && data[:search][:type] == 'Hashtag'
+      elsif data[:type].present? && data[:type] == 'Hashtag'
         if search_key.present?
           hash_tags = Hashtag.search_by_title(search_key)
         else

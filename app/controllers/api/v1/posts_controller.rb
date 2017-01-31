@@ -5,10 +5,8 @@ class Api::V1::PostsController < Api::V1::ApiProtectedController
     #   "auth_token": "111111111",
     #   "per_page":10,
     #   "page":1,
-    #   "search":
-    #   {
-    #     "type": "Hashtag"
-    #   }
+    #    "type": "Member",
+    #      "search_key": ""
     # }
     user_session = UserSession.find_by_auth_token(params[:auth_token])
     if user_session.present?
