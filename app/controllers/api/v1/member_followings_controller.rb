@@ -4,7 +4,6 @@ class Api::V1::MemberFollowingsController < ApplicationController
   def get_followers
     # params = {
     #   "auth_token": "111111111",
-    #   "action": "get_followers",
     #   "per_page":10,
     #   "page":1,
     #   "member_profile":

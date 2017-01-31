@@ -28,6 +28,12 @@ Rails.application.routes.draw do
         end
       end
       
+      resources :posts, only:[] do
+        collection do
+          get 'discover'
+        end
+      end
+      
       resources :member_followings, only:[] do
         collection do
           get 'get_followers'

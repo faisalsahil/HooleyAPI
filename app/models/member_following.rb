@@ -2,7 +2,6 @@ class MemberFollowing < ApplicationRecord
   include AppConstants
   belongs_to :member_profile
   @@limit = 10
-
   
   def self.get_followers(data, current_user)
     begin

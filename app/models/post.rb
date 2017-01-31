@@ -314,7 +314,7 @@ class Post < ApplicationRecord
       following_ids = profile.member_followings.where(following_status: AppConstants::ACCEPTED).pluck(:following_profile_id)
       following_ids << profile.id
       post_ids      = PostMember.where(member_profile_id: profile.id).pluck(:post_id)
-      posts = Post.where("(member_profile_id IN (?) OR id IN (?)) AND is_deleted = ?", following_ids, post_ids, false).distinct
+      posts = Post.where("(member_profile_id IN (?) OR id IN (?)) AND is_deleted = ? OR is_post_public = ?", following_ids, post_ids, false, true).distinct
       
       if current_user.current_sign_in_at.blank? && last_subs_date.present? && TimeDifference.between(Time.now, last_subs_date).in_minutes < 30
         if current_user.synced_datetime.present?
@@ -707,6 +707,57 @@ class Post < ApplicationRecord
         }
     ).merge!(is_im_following: is_following)
     {posts: posts, member_profile: member_profile}.as_json
+  end
+
+  def self.discover(data, current_user)
+    begin
+      data       = data.with_indifferent_access
+      per_page   = (data[:per_page] || @@limit).to_i
+      page       = (data[:page] || 1).to_i
+      search_key = data[:search][:search_key]
+      if data[:search][:type].present? && data[:search][:type] == 'Member'
+        if search_key.present?
+          users  =  User.search_by_title(search_key)
+        else
+          users  =  User.all
+        end
+        profile_ids     = users.pluck(:profile_id)
+        member_profiles = MemberProfile.where(id: profile_ids)
+        member_profiles = member_profiles.page(page.to_i).per_page(per_page.to_i)
+        paging_data     = JsonBuilder.get_paging_data(page, per_page, member_profiles)
+        resp_data       = trending_api_loop_response([], [], true, current_user, member_profiles)
+      elsif data[:search][:type].present? && data[:search][:type] == 'Post'
+        if search_key.present?
+          posts  = Post.search_by_title(search_key)
+        else
+          posts  =  Post.all
+        end
+        posts       = posts.page(page.to_i).per_page(per_page.to_i)
+        paging_data = JsonBuilder.get_paging_data(page, per_page, posts)
+        resp_data   = trending_api_loop_response(posts, [], true, current_user, [])
+      elsif data[:search][:type].present? && data[:search][:type] == 'Hashtag'
+        if search_key.present?
+          hash_tags = Hashtag.search_by_title(search_key)
+        else
+          hash_tags =  Hashtag.all
+        end
+        hash_tags   = hash_tags.page(page.to_i).per_page(per_page.to_i)
+        paging_data = JsonBuilder.get_paging_data(page, per_page, hash_tags)
+        resp_data   = trending_api_loop_response([], hash_tags, true, current_user, [])
+      end
+      resp_status  = 1
+      resp_message = 'Discover list'
+      resp_errors  = ''
+    rescue Exception => e
+      resp_data       = ''
+      resp_status     = 0
+      paging_data     = ''
+      resp_message    = 'error'
+      resp_errors     = e
+    end
+    resp_request_id   = ''
+    resp_request_id   = data[:request_id] if data[:request_id].present?
+    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
   end
 end
 
