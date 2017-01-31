@@ -10,13 +10,15 @@ class MemberFollowing < ApplicationRecord
       page     = (data[:page] || 1).to_i
       profile = MemberProfile.find_by_id(data[:member_profile_id])
       # followers
-      member_followings = MemberFollowing.where(following_status: AppConstants::ACCEPTED, following_profile_id: profile.id, is_deleted: false) if profile.present?
       if data[:search_key].present?
-        profile_ids     = member_followings.pluck(:member_profile_id)
+        member_followings = MemberFollowing.where(following_status: AppConstants::ACCEPTED, following_profile_id: profile.id, is_deleted: false) if profile.present?
+        profile_ids  =  member_followings.pluck(:member_profile_id)
         users = User.where("lower(first_name) like :q or lower(last_name) like :q or lower(email) like :q", q: "%#{data[:member_profile][:search_key]}%".downcase)
         # users   = User.search_by_title(data[:search_key])
-        searched_profile_ids = users.where(profile_id: profile_ids).pluck(:profile_id)
-        member_followings = MemberFollowing.where(following_status: AppConstants::ACCEPTED, following_profile_id: profile.id, is_deleted: false, member_profile_id: searched_profile_ids)
+        searched_profile_ids = users.where(profile_id: profile_ids).pluck(:profile_id) if users.present?
+        member_followings = MemberFollowing.where(following_status: AppConstants::ACCEPTED, following_profile_id: profile.id, is_deleted: false, member_profile_id: searched_profile_ids) if searched_profile_ids.present?
+      else
+        member_followings = MemberFollowing.where(following_status: AppConstants::ACCEPTED, following_profile_id: profile.id, is_deleted: false) if profile.present?
       end
     
       if member_followings.present?
@@ -27,11 +29,11 @@ class MemberFollowing < ApplicationRecord
         resp_message  = 'success'
         resp_errors   = ''
       else
-        resp_data = {}
-        paging_data = nil
-        resp_status = 0
+        resp_data    = {}
+        paging_data  = nil
+        resp_status  = 0
         resp_message = 'error'
-        resp_errors = 'No one following you.'
+        resp_errors  = 'No one following you.'
       end
     rescue Exception => e
       resp_data       = ''
