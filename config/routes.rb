@@ -37,6 +37,7 @@ Rails.application.routes.draw do
       resources :member_followings, only:[] do
         collection do
           get 'get_followers'
+          get 'get_following_requests'
         end
       end
 

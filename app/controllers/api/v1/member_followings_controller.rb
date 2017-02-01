@@ -18,4 +18,20 @@ class Api::V1::MemberFollowingsController < ApplicationController
       return render json: resp_data
     end
   end
+  
+  def get_following_requests
+    # params = {
+    #   "auth_token": "111111111",
+    #   "per_page":10,
+    #   "page":1,
+    # }
+    user_session = UserSession.find_by_auth_token(params[:auth_token])
+    if user_session.present?
+      response = MemberFollowing.get_following_requests(params, user_session.user)
+      render json: response
+    else
+      resp_data = {resp_data: {}, resp_status: 0, resp_message: 'Invalid Token', resp_error: 'error'}.as_json
+      return render json: resp_data
+    end
+  end
 end

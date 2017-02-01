@@ -54,10 +54,10 @@ class ProfileChannel < ApplicationCable::Channel
     end
   end
   
-  def get_following_requests(data)
-    response = MemberFollowing.get_following_requests(data, current_user)
-    ProfileJob.perform_later response, current_user.id
-  end
+  # def get_following_requests(data)
+  #   response = MemberFollowing.get_following_requests(data, current_user)
+  #   ProfileJob.perform_later response, current_user.id
+  # end
   
   def unfollow_member(data)
     response = MemberFollowing.unfollow_member(data, current_user)
