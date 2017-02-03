@@ -713,43 +713,36 @@ class Post < ApplicationRecord
 
   def self.discover(data, current_user)
     begin
-      data       = data.with_indifferent_access
-      per_page   = (data[:per_page] || @@limit).to_i
-      page       = (data[:page] || 1).to_i
-      search_key = data[:search_key]
-      if data[:type].present? && data[:type] == 'Member'
-        if search_key.present?
-          users  =  User.search_by_title(search_key)
+      data     = data.with_indifferent_access
+      per_page = (data[:per_page] || @@limit).to_i
+      page     = (data[:page] || 1).to_i
+    
+      if data[:search_key].present?
+        search_key = data[:search_key]
+        # search_records = PgSearch.multisearch(search_key)
+        posts     = Post.search_by_title(search_key)
+        users     = User.search_by_title(search_key)
+        hash_tags = Hashtag.search_by_title(search_key)
+        if posts.present? || users.present? || hash_tags.present?
+          # paging_data, resp_data = discover_search(search_records, page, per_page, data[:search][:type], current_user)
+          paging_data, resp_data = discover_search_new(posts, users, hash_tags, page, per_page, data[:type], current_user)
+          resp_status = 1
+          resp_message = 'Discover list'
+          resp_errors = ''
         else
-          users  =  User.all
+          resp_data    = {}
+          resp_status  = 0
+          resp_message = 'error'
+          resp_errors  = 'No Record found'
+          paging_data  = ''
         end
-        profile_ids     = users.pluck(:profile_id)
-        member_profiles = MemberProfile.where(id: profile_ids)
-        member_profiles = member_profiles.page(page.to_i).per_page(per_page.to_i)
-        paging_data     = JsonBuilder.get_paging_data(page, per_page, member_profiles)
-        resp_data       = trending_api_loop_response([], [], true, current_user, member_profiles)
-      elsif data[:type].present? && data[:type] == 'Post'
-        if search_key.present?
-          posts  = Post.search_by_title(search_key)
-        else
-          posts  =  Post.all
-        end
-        posts       = posts.page(page.to_i).per_page(per_page.to_i)
-        paging_data = JsonBuilder.get_paging_data(page, per_page, posts)
-        resp_data   = trending_api_loop_response(posts, [], true, current_user, [])
-      elsif data[:type].present? && data[:type] == 'Hashtag'
-        if search_key.present?
-          hash_tags = Hashtag.search_by_title(search_key)
-        else
-          hash_tags =  Hashtag.all
-        end
-        hash_tags   = hash_tags.page(page.to_i).per_page(per_page.to_i)
-        paging_data = JsonBuilder.get_paging_data(page, per_page, hash_tags)
-        resp_data   = trending_api_loop_response([], hash_tags, true, current_user, [])
+      else
+        resp_data    = {}
+        resp_status  = 0
+        resp_message = 'error'
+        resp_errors  = 'No Key found'
+        paging_data  = ''
       end
-      resp_status  = 1
-      resp_message = 'Discover list'
-      resp_errors  = ''
     rescue Exception => e
       resp_data       = ''
       resp_status     = 0
@@ -757,9 +750,42 @@ class Post < ApplicationRecord
       resp_message    = 'error'
       resp_errors     = e
     end
-    resp_request_id   = ''
-    resp_request_id   = data[:request_id] if data[:request_id].present?
+    resp_request_id   = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
+  end
+
+  def self.discover_search_new(posts, users, hash_tags, page, per_page, type, current_user)
+    larger_array_type = ''
+  
+    if type.blank? || type == 'Member'
+      profile_ids     = users.pluck(:profile_id)
+      member_profiles = MemberProfile.where(id: profile_ids)
+      member_profiles = member_profiles.page(page.to_i).per_page(per_page.to_i)
+    end
+  
+    if type.blank? || type == 'Post'
+      posts = posts.page(page.to_i).per_page(per_page.to_i)
+    end
+  
+    if type.blank? || type == 'Hashtag'
+      hash_tags = hash_tags.page(page.to_i).per_page(per_page.to_i)
+    end
+  
+    if type.present?
+      larger_array_type = type
+    else
+      if member_profiles.count > posts.count || member_profiles.count > hash_tags.count
+        larger_array_type = 'Member'
+      elsif posts.count > member_profiles.count || posts.count > hash_tags.count
+        larger_array_type = 'Post'
+      elsif hash_tags.count > member_profiles.count || hash_tags.count > posts.count
+        larger_array_type = 'Hashtag'
+      end
+    end
+  
+    paging_data = JsonBuilder.get_paging_data(page, per_page, paging_records(member_profiles, posts, hash_tags, larger_array_type))
+    resp_data = trending_api_loop_response(posts, hash_tags, true, current_user, member_profiles)
+    [paging_data, resp_data]
   end
 end
 

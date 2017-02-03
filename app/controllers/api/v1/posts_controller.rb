@@ -1,13 +1,13 @@
 class Api::V1::PostsController < Api::V1::ApiProtectedController
   
   def discover
-    # params = {
-    #   "auth_token": "111111111",
-    #   "per_page":10,
-    #   "page":1,
-    #    "type": "Member",
-    #      "search_key": ""
-    # }
+    params = {
+      "auth_token": "111111111",
+      "per_page":10,
+      "page":1,
+      "type": "",
+      "search_key": "hello"
+    }
     user_session = UserSession.find_by_auth_token(params[:auth_token])
     if user_session.present?
       response = Post.discover(params, user_session.user)
