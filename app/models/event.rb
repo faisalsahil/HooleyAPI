@@ -35,7 +35,7 @@ class Event < ApplicationRecord
       profile = current_user.profile
       event   = profile.events.build(data[:event])
       if event.save
-        data[:hash_tags].each do |tag|
+        data[:hash_tags] && data[:hash_tags].each do |tag|
           hash_tag = Hashtag.find_by_name(tag[:tag_name])
           if hash_tag.present?
             hash_tag.count = hash_tag.count + 1
