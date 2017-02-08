@@ -734,23 +734,24 @@ class Post < ApplicationRecord
           resp_status  = 0
           resp_message = 'error'
           resp_errors  = 'No Record found'
-          paging_data  = ''
+          paging_data  = {}
         end
       else
         resp_data    = {}
         resp_status  = 0
         resp_message = 'error'
         resp_errors  = 'No Key found'
-        paging_data  = ''
+        paging_data  = {}
       end
     rescue Exception => e
-      resp_data       = ''
+      resp_data       = {}
       resp_status     = 0
-      paging_data     = ''
+      paging_data     = {}
       resp_message    = 'error'
       resp_errors     = e
     end
-    resp_request_id   = data[:request_id]
+    resp_request_id   = ''
+    resp_request_id   = data[:request_id] if data[:request_id].present?
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
   end
 
