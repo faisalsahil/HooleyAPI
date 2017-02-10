@@ -37,7 +37,9 @@ class ProfileChannel < ApplicationCable::Channel
   def event_create(data)
     response, event_id = Event.event_create(data, current_user)
     ProfileJob.perform_later response, current_user.id
-    Event.event_sync_to_members(event_id, current_user)
+    if event_id != 0
+      Event.event_sync_to_members(event_id, current_user)
+    end
   end
 
   def show_event(data)

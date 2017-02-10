@@ -12,6 +12,7 @@ Rails.application.routes.draw do
 
   namespace :api, defaults: { format: 'json' } do
     namespace :v1 do
+      resources :users, only:[:index]
       resources :registrations, only: [] do
         collection do
           post :sign_up
@@ -19,6 +20,7 @@ Rails.application.routes.draw do
           post :forgot_password
         end
       end
+      resources :categories
       resources :member_profiles, only:[] do
         collection do
           get 'get_profile'

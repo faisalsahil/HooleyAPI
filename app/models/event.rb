@@ -51,18 +51,18 @@ class Event < ApplicationRecord
           end
         end
         sync_event_id   = event.id
-        resp_data       = ''
+        resp_data       = {}
         resp_status     = 1
         resp_message    = 'Event Created'
         resp_errors     = ''
       else
-        resp_data       = ''
+        resp_data       = {}
         resp_status     = 0
         resp_message    = 'Errors'
         resp_errors     = event.errors.messages
       end
     rescue Exception => e
-      resp_data       = ''
+      resp_data       = {}
       resp_status     = 0
       paging_data     = ''
       resp_message    = 'error'
@@ -110,7 +110,7 @@ class Event < ApplicationRecord
 
   def self.events_response(events, sync_token=nil)
     events = events.as_json(
-        only: [:id, :event_name, :member_profile_id, :location, :latitude, :longitude, :radius, :event_details, :is_frields_allowed, :is_public, :is_paid, :category_id, :event_type, :start_date, :end_date, :created_at, :updated_at],
+        only: [:id, :event_name, :member_profile_id, :location, :latitude, :longitude, :radius, :event_details, :is_frields_allowed, :is_public, :is_paid, :category_id, :event_type, :start_date, :end_date, :created_at, :updated_at, :custom_event, :message_from_host],
         include:{
             event_attachments:{
                 only:[:id, :event_id, :attachment_type, :message, :attachment_url, :thumbnail_url, :poster_skin]
@@ -165,7 +165,7 @@ class Event < ApplicationRecord
 
   def self.event_response(event)
     event = event.as_json(
-        only:    [:id, :name, :country_id, :city_id, :organization, :location, :description, :cost, :camp_website, :start_date, :end_date, :upload, :member_profile_id, :created_at, :updated_at]
+        only:    [:id, :name, :country_id, :city_id, :organization, :location, :description, :cost, :camp_website, :start_date, :end_date, :upload, :member_profile_id, :created_at, :updated_at, :custom_event, :message_from_host]
     )
   
     events_array = []
@@ -286,7 +286,7 @@ class Event < ApplicationRecord
 
   def self.event_list_response(day_events, np_day_events, week_events, remaining_events, type, today_paging_data, np_paging_data, week_paging_data, remaining_paging_data)
     day_events = day_events.as_json(
-       only:[:id, :event_name, :event_details, :start_date, :end_date, :location],
+       only:[:id, :event_name, :event_details, :start_date, :end_date, :location, :message_from_host],
        include:{
            event_attachments:{
                only:[:id, :attachment_url, :thumbnail_url, :message, :attachment_type]
@@ -294,7 +294,7 @@ class Event < ApplicationRecord
        }
     )
     np_day_events = np_day_events.as_json(
-        only:[:id, :event_name, :event_details, :start_date, :end_date, :location],
+        only:[:id, :event_name, :event_details, :start_date, :end_date, :location, :message_from_host],
         include:{
             event_attachments:{
                 only:[:id, :attachment_url, :thumbnail_url, :message, :attachment_type]
@@ -302,7 +302,7 @@ class Event < ApplicationRecord
         }
     )
     week_events = week_events.as_json(
-        only:[:id, :event_name, :event_details, :start_date, :end_date, :location],
+        only:[:id, :event_name, :event_details, :start_date, :end_date, :location, :message_from_host],
         include:{
             event_attachments:{
                 only:[:id, :attachment_url, :thumbnail_url, :message, :attachment_type]
@@ -310,7 +310,7 @@ class Event < ApplicationRecord
         }
     )
     remaining_events = remaining_events.as_json(
-        only:[:id, :event_name, :event_details, :start_date, :end_date, :location],
+        only:[:id, :event_name, :event_details, :start_date, :end_date, :location, :message_from_host],
         include:{
             event_attachments:{
                 only:[:id, :attachment_url, :thumbnail_url, :message, :attachment_type]
@@ -397,7 +397,7 @@ class Event < ApplicationRecord
     events  =  events.page(page.to_i).per_page(per_page.to_i)
     paging_data = JsonBuilder.get_paging_data(page, per_page, events)
     events = events.as_json(
-        only:[:id, :event_name, :event_details, :start_date, :end_date, :location],
+        only:[:id, :event_name, :event_details, :start_date, :end_date, :location, :message_from_host],
         include:{
             event_attachments:{
                 only:[:id, :attachment_url, :thumbnail_url, :message, :attachment_type]
@@ -422,7 +422,7 @@ class Event < ApplicationRecord
       today_events  =  today_events.page(page.to_i).per_page(per_page.to_i)
       paging_data   =  JsonBuilder.get_paging_data(page, per_page, today_events)
       today_events  =  today_events.as_json(
-          only:[:id, :event_name, :event_details, :start_date, :end_date, :location],
+          only:[:id, :event_name, :event_details, :start_date, :end_date, :location, :message_from_host],
           include:{
               event_attachments:{
                   only:[:id, :attachment_url, :thumbnail_url, :message, :attachment_type]
@@ -436,7 +436,7 @@ class Event < ApplicationRecord
       yesterday_events  =  yesterday_events.page(page.to_i).per_page(per_page.to_i)
       paging_data       =  JsonBuilder.get_paging_data(page, per_page, yesterday_events)
       yesterday_events  =  yesterday_events.as_json(
-          only:[:id, :event_name, :event_details, :start_date, :end_date, :location],
+          only:[:id, :event_name, :event_details, :start_date, :end_date, :location, :message_from_host],
           include:{
               event_attachments:{
                   only:[:id, :attachment_url, :thumbnail_url, :message, :attachment_type]
@@ -463,7 +463,7 @@ class Event < ApplicationRecord
       a_day_after_events  =  a_day_after_events.page(page.to_i).per_page(per_page.to_i)
       paging_data         =  JsonBuilder.get_paging_data(page, per_page, a_day_after_events)
       a_day_after_events  =  a_day_after_events.as_json(
-          only:[:id, :event_name, :event_details, :start_date, :end_date, :location],
+          only:[:id, :event_name, :event_details, :start_date, :end_date, :location, :message_from_host],
           include:{
               event_attachments:{
                   only:[:id, :attachment_url, :thumbnail_url, :message, :attachment_type]
@@ -477,7 +477,7 @@ class Event < ApplicationRecord
       a_day_before_events  =  a_day_before_events.page(page.to_i).per_page(per_page.to_i)
       paging_data          =  JsonBuilder.get_paging_data(page, per_page, a_day_before_events)
       a_day_before_events  =  a_day_before_events.as_json(
-          only:[:id, :event_name, :event_details, :start_date, :end_date, :location],
+          only:[:id, :event_name, :event_details, :start_date, :end_date, :location, :message_from_host],
           include:{
               event_attachments:{
                   only:[:id, :attachment_url, :thumbnail_url, :message, :attachment_type]
@@ -504,7 +504,7 @@ class Event < ApplicationRecord
       next_week_events  =  next_week_events.page(page.to_i).per_page(per_page.to_i)
       paging_data       =  JsonBuilder.get_paging_data(page, per_page, next_week_events)
       next_week_events  =  next_week_events.as_json(
-          only:[:id, :event_name, :event_details, :start_date, :end_date, :location],
+          only:[:id, :event_name, :event_details, :start_date, :end_date, :location, :message_from_host],
           include:{
               event_attachments:{
                   only:[:id, :attachment_url, :thumbnail_url, :message, :attachment_type]
@@ -518,7 +518,7 @@ class Event < ApplicationRecord
       last_week_events  =  last_week_events.page(page.to_i).per_page(per_page.to_i)
       paging_data       =  JsonBuilder.get_paging_data(page, per_page, last_week_events)
       last_week_events  =  last_week_events.as_json(
-          only:[:id, :event_name, :event_details, :start_date, :end_date, :location],
+          only:[:id, :event_name, :event_details, :start_date, :end_date, :location, :message_from_host],
           include:{
               event_attachments:{
                   only:[:id, :attachment_url, :thumbnail_url, :message, :attachment_type]
@@ -545,7 +545,7 @@ class Event < ApplicationRecord
       upcoming_events  =  upcoming_events.page(page.to_i).per_page(per_page.to_i)
       paging_data      =  JsonBuilder.get_paging_data(page, per_page, upcoming_events)
       upcoming_events  =  upcoming_events.as_json(
-          only:[:id, :event_name, :event_details, :start_date, :end_date, :location],
+          only:[:id, :event_name, :event_details, :start_date, :end_date, :location, :message_from_host],
           include:{
               event_attachments:{
                   only:[:id, :attachment_url, :thumbnail_url, :message, :attachment_type]
@@ -559,7 +559,7 @@ class Event < ApplicationRecord
       previous_events  =  previous_events.page(page.to_i).per_page(per_page.to_i)
       paging_data      =  JsonBuilder.get_paging_data(page, per_page, previous_events)
       previous_events  =  previous_events.as_json(
-          only:[:id, :event_name, :event_details, :start_date, :end_date, :location],
+          only:[:id, :event_name, :event_details, :start_date, :end_date, :location, :message_from_host],
           include:{
               event_attachments:{
                   only:[:id, :attachment_url, :thumbnail_url, :message, :attachment_type]

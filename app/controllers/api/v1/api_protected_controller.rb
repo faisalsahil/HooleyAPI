@@ -176,7 +176,6 @@ class Api::V1::ApiProtectedController < ApplicationController
         my_logger.info("")
         puts "4"*90
         # raise CanCan::AccessDenied
-
       end
     else
       api_restrict_access_debug
