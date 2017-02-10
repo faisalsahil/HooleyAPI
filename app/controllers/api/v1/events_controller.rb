@@ -40,13 +40,13 @@ class Api::V1::EventsController < ApplicationController
     #     "list_type": 'np_day',
     # }
     #
-    params = {
-        "auth_token": "111111111",
-        "type": 'upcoming',
-        "page": 1,
-        "per_page": 10,
-        "list_type": 'week',
-    }
+    # params = {
+    #     "auth_token": "111111111",
+    #     "type": 'upcoming',
+    #     "page": 1,
+    #     "per_page": 10,
+    #     "list_type": 'week',
+    # }
 
     # params = {
     #     "auth_token": "111111111",
