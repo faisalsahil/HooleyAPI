@@ -4,6 +4,7 @@ class Event < ApplicationRecord
   include PgSearch
   
   belongs_to :member_profile
+  belongs_to :category
   has_many   :event_attachments, dependent: :destroy
   has_many   :event_co_hosts,    dependent: :destroy
   has_many   :event_hash_tags,   dependent: :destroy
@@ -138,6 +139,9 @@ class Event < ApplicationRecord
                     }
                 }
             },
+            category:{
+              only:[:id, :name]
+            },
             event_attachments:{
                 only:[:id, :event_id, :attachment_type, :message, :attachment_url, :thumbnail_url, :poster_skin]
             },
@@ -212,6 +216,9 @@ class Event < ApplicationRecord
               },
               event_co_hosts:{
                   only:[:id, :event_id, :member_profile_id]
+              },
+              hashtags:{
+                  only:[:id, :name]
               }
           }
       )
