@@ -348,14 +348,8 @@ class Event < ApplicationRecord
       data  =  data.with_indifferent_access
       if data[:type].present? && data[:type] == 'search'
         response = search_event_list(data)
-      elsif data[:list_type].present? && data[:list_type]    == 'day'
-        response = day_event_list(data)
-      elsif data[:list_type].present? && data[:list_type] == 'np_day'
-        response = np_event_list(data)
-      elsif data[:list_type].present? && data[:list_type] == 'week'
-        response = week_event_list(data)
-      elsif data[:list_type].present? && data[:list_type] == 'all'
-        response = all_event_list(data)
+      else
+        response = event_list_horizontal_response(data)
       end
     rescue Exception => e
       resp_data       = ''
@@ -413,168 +407,44 @@ class Event < ApplicationRecord
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
   end
   
-  def self.day_event_list(data)
+  def self.event_list_horizontal_response(data)
     per_page = (data[:per_page] || @@limit).to_i
     page     = (data[:page] || 1).to_i
     
-    if data[:type] == 'upcoming'
-      today_events  = Event.where('Date(start_date) = ?',  Date.today)
-      today_events  =  today_events.page(page.to_i).per_page(per_page.to_i)
-      paging_data   =  JsonBuilder.get_paging_data(page, per_page, today_events)
-      today_events  =  today_events.as_json(
-          only:[:id, :event_name, :event_details, :start_date, :end_date, :location, :message_from_host],
-          include:{
-              event_attachments:{
-                  only:[:id, :attachment_url, :thumbnail_url, :message, :attachment_type]
-              }
-          }
-      )
-      response        = {events: today_events, paging_data: paging_data}.as_json
-      resp_data       = {today_events: response}.as_json
-    elsif data[:type] == 'past'
-      yesterday_events  =  Event.where('Date(start_date) = ?',  Date.today - 1.day)
-      yesterday_events  =  yesterday_events.page(page.to_i).per_page(per_page.to_i)
-      paging_data       =  JsonBuilder.get_paging_data(page, per_page, yesterday_events)
-      yesterday_events  =  yesterday_events.as_json(
-          only:[:id, :event_name, :event_details, :start_date, :end_date, :location, :message_from_host],
-          include:{
-              event_attachments:{
-                  only:[:id, :attachment_url, :thumbnail_url, :message, :attachment_type]
-              }
-          }
-      )
-      response        = {events: yesterday_events, paging_data: paging_data}.as_json
-      resp_data       = {yesterday_events: response}.as_json
+    if data[:type] == 'upcoming' && data[:list_type] == 'day'
+      events  = Event.where('Date(start_date) = ?',  Date.today)
+    elsif data[:type] == 'upcoming' && data[:list_type] == 'np_day'
+      events  = Event.where('Date(start_date) = ?',  Date.today + 1.day)
+    elsif data[:type] == 'upcoming' && data[:list_type] == 'week'
+      events  = Event.where('Date(start_date) > ? AND Date(start_date) <= ?', Date.today + 1.day, Date.today + 1.week)
+    elsif data[:type] == 'upcoming' && data[:list_type] == 'all'
+      events  = Event.where('Date(start_date) > ?', Date.today + 1.week)
+    elsif data[:type] == 'past' && data[:list_type] == 'day'
+      events  =  Event.where('Date(start_date) = ?',  Date.today - 1.day)
+    elsif data[:type] == 'past' && data[:list_type] == 'np_day'
+      events  = Event.where('Date(start_date) = ?',  Date.today - 2.day)
+    elsif data[:type] == 'past' && data[:list_type] == 'week'
+      events  = Event.where('Date(start_date) >= ? AND Date(start_date) < ?', Date.today - 1.week, Date.today - 2.day)
+    elsif data[:type] == 'past' && data[:list_type] == 'all'
+      events  = Event.where('Date(start_date) < ?', Date.today - 1.week)
     end
+    events           =  events.page(page.to_i).per_page(per_page.to_i)
+    paging_data      =  JsonBuilder.get_paging_data(page, per_page, events)
+    events =  events.as_json(
+        only:[:id, :event_name, :event_details, :start_date, :end_date, :location, :message_from_host],
+        include:{
+            event_attachments:{
+                only:[:id, :attachment_url, :thumbnail_url, :message, :attachment_type]
+            }
+        }
+    )
+    resp_data       = {events: events}.as_json
     resp_status     = 1
     resp_message    = 'Event list'
     resp_errors     = ''
     resp_request_id = ''
     resp_request_id = data[:request_id] if data[:request_id].present?
-    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
-  end
-
-  def self.np_event_list(data)
-    per_page = (data[:per_page] || @@limit).to_i
-    page     = (data[:page] || 1).to_i
-  
-    if data[:type] == 'upcoming'
-      a_day_after_events  = Event.where('Date(start_date) = ?',  Date.today + 1.day)
-      a_day_after_events  =  a_day_after_events.page(page.to_i).per_page(per_page.to_i)
-      paging_data         =  JsonBuilder.get_paging_data(page, per_page, a_day_after_events)
-      a_day_after_events  =  a_day_after_events.as_json(
-          only:[:id, :event_name, :event_details, :start_date, :end_date, :location, :message_from_host],
-          include:{
-              event_attachments:{
-                  only:[:id, :attachment_url, :thumbnail_url, :message, :attachment_type]
-              }
-          }
-      )
-      response        = {events: a_day_after_events, paging_data: paging_data}.as_json
-      resp_data       = {a_day_after_events: response}.as_json
-    elsif data[:type] == 'past'
-      a_day_before_events  = Event.where('Date(start_date) = ?',  Date.today - 2.day)
-      a_day_before_events  =  a_day_before_events.page(page.to_i).per_page(per_page.to_i)
-      paging_data          =  JsonBuilder.get_paging_data(page, per_page, a_day_before_events)
-      a_day_before_events  =  a_day_before_events.as_json(
-          only:[:id, :event_name, :event_details, :start_date, :end_date, :location, :message_from_host],
-          include:{
-              event_attachments:{
-                  only:[:id, :attachment_url, :thumbnail_url, :message, :attachment_type]
-              }
-          }
-      )
-      response        = {events: a_day_before_events, paging_data: paging_data}.as_json
-      resp_data       = {a_day_before_events: response}.as_json
-    end
-    resp_status     = 1
-    resp_message    = 'Event list'
-    resp_errors     = ''
-    resp_request_id = ''
-    resp_request_id = data[:request_id] if data[:request_id].present?
-    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
-  end
-
-  def self.week_event_list(data)
-    per_page = (data[:per_page] || @@limit).to_i
-    page     = (data[:page] || 1).to_i
-  
-    if data[:type] == 'upcoming'
-      next_week_events  = Event.where('Date(start_date) > ? AND Date(start_date) <= ?', Date.today + 1.day, Date.today + 1.week)
-      next_week_events  =  next_week_events.page(page.to_i).per_page(per_page.to_i)
-      paging_data       =  JsonBuilder.get_paging_data(page, per_page, next_week_events)
-      next_week_events  =  next_week_events.as_json(
-          only:[:id, :event_name, :event_details, :start_date, :end_date, :location, :message_from_host],
-          include:{
-              event_attachments:{
-                  only:[:id, :attachment_url, :thumbnail_url, :message, :attachment_type]
-              }
-          }
-      )
-      response        = {events: next_week_events, paging_data: paging_data}.as_json
-      resp_data       = {next_week_events: response}.as_json
-    elsif data[:type] == 'past'
-      last_week_events  = Event.where('Date(start_date) >= ? AND Date(start_date) < ?', Date.today - 1.week, Date.today - 2.day)
-      last_week_events  =  last_week_events.page(page.to_i).per_page(per_page.to_i)
-      paging_data       =  JsonBuilder.get_paging_data(page, per_page, last_week_events)
-      last_week_events  =  last_week_events.as_json(
-          only:[:id, :event_name, :event_details, :start_date, :end_date, :location, :message_from_host],
-          include:{
-              event_attachments:{
-                  only:[:id, :attachment_url, :thumbnail_url, :message, :attachment_type]
-              }
-          }
-      )
-      response        = {events: last_week_events, paging_data: paging_data}.as_json
-      resp_data       = {last_week_events: response}.as_json
-    end
-    resp_status     = 1
-    resp_message    = 'Event list'
-    resp_errors     = ''
-    resp_request_id = ''
-    resp_request_id = data[:request_id] if data[:request_id].present?
-    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
-  end
-
-  def self.all_event_list(data)
-    per_page = (data[:per_page] || @@limit).to_i
-    page     = (data[:page] || 1).to_i
-  
-    if data[:type] == 'upcoming'
-      upcoming_events  = Event.where('Date(start_date) > ?', Date.today + 1.week)
-      upcoming_events  =  upcoming_events.page(page.to_i).per_page(per_page.to_i)
-      paging_data      =  JsonBuilder.get_paging_data(page, per_page, upcoming_events)
-      upcoming_events  =  upcoming_events.as_json(
-          only:[:id, :event_name, :event_details, :start_date, :end_date, :location, :message_from_host],
-          include:{
-              event_attachments:{
-                  only:[:id, :attachment_url, :thumbnail_url, :message, :attachment_type]
-              }
-          }
-      )
-      response        = {events: upcoming_events, paging_data: paging_data}.as_json
-      resp_data       = {upcoming_events: response}.as_json
-    elsif data[:type] == 'past'
-      previous_events  = Event.where('Date(start_date) < ?', Date.today - 1.week)
-      previous_events  =  previous_events.page(page.to_i).per_page(per_page.to_i)
-      paging_data      =  JsonBuilder.get_paging_data(page, per_page, previous_events)
-      previous_events  =  previous_events.as_json(
-          only:[:id, :event_name, :event_details, :start_date, :end_date, :location, :message_from_host],
-          include:{
-              event_attachments:{
-                  only:[:id, :attachment_url, :thumbnail_url, :message, :attachment_type]
-              }
-          }
-      )
-      response        = {events: previous_events, paging_data: paging_data}.as_json
-      resp_data       = {previous_events: response}.as_json
-    end
-    resp_status     = 1
-    resp_message    = 'Event list'
-    resp_errors     = ''
-    resp_request_id = ''
-    resp_request_id = data[:request_id] if data[:request_id].present?
-    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
+    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
   end
 end
 
