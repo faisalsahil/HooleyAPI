@@ -256,7 +256,7 @@ class Event < ApplicationRecord
   def self.search_event_list(data)
     if data[:keyword].present?
       # events = Event.search_by_title(data[:keyword])
-      events = Event.where('lower(event_name) like ? OR lower(event_details) like ?', data[:keyword].downcase, data[:keyword].downcase)
+      events = Event.where('lower(event_name) like ? OR lower(event_details) like ?', "%#{data[:keyword]}%".downcase, "%#{data[:keyword]}%".downcase)
     end
     if data[:date].present?
       events = events.where('Date(start_date) = ?', data[:date])
