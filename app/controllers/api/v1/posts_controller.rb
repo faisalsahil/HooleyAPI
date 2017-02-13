@@ -17,4 +17,27 @@ class Api::V1::PostsController < Api::V1::ApiProtectedController
       return render json: resp_data
     end
   end
+  
+  # Call from web
+  def destroy
+    post       =  Post.find_by_id(params[:post_id])
+    if post.present?
+      if post.is_deleted
+        post.is_deleted = false
+      else
+        post.is_deleted = true
+      end
+      post.save!
+      resp_data    = {}
+      resp_status  = 1
+      resp_message = 'Success'
+      resp_errors  = ''
+    else
+      resp_data    = {}
+      resp_status  = 0
+      resp_message = 'error'
+      resp_errors  = 'post not found'
+    end
+    common_api_response(resp_data, resp_status, resp_message, resp_errors)
+  end
 end

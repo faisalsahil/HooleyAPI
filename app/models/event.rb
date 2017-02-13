@@ -29,6 +29,10 @@ class Event < ApplicationRecord
         }
     }
 
+  def post_count
+    self.posts.count
+  end
+  
   def self.event_create(data, current_user)
     begin
       sync_event_id = 0
@@ -130,6 +134,7 @@ class Event < ApplicationRecord
   def self.events_response(events, sync_token=nil)
     events = events.as_json(
         only: [:id, :event_name, :member_profile_id, :location, :latitude, :longitude, :radius, :event_details, :is_frields_allowed, :is_public, :is_paid, :category_id, :event_type, :start_date, :end_date, :created_at, :updated_at, :custom_event, :message_from_host],
+        methods:[:post_count],
         include:{
             member_profile:{
                 only: [:id, :photo],
@@ -146,7 +151,17 @@ class Event < ApplicationRecord
                 only:[:id, :event_id, :attachment_type, :message, :attachment_url, :thumbnail_url, :poster_skin]
             },
             event_co_hosts:{
-                only:[:id, :event_id, :member_profile_id]
+                only:[:id, :event_id, :member_profile_id],
+                include:{
+                  member_profile: {
+                      only: [:id, :photo],
+                      include: {
+                          user: {
+                              only: [:id, :first_name, :last_name]
+                          }
+                      }
+                  }
+                }
             },
             hashtags:{
                 only:[:id, :name]
@@ -240,7 +255,8 @@ class Event < ApplicationRecord
 
   def self.search_event_list(data)
     if data[:keyword].present?
-      events = Event.search_by_title(data[:keyword])
+      # events = Event.search_by_title(data[:keyword])
+      events = Event.where('lower(event_name) like ? OR lower(event_details) like ?', data[:keyword].downcase, data[:keyword].downcase)
     end
     if data[:date].present?
       events = events.where('Date(start_date) = ?', data[:date])

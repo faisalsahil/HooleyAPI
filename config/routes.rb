@@ -12,7 +12,13 @@ Rails.application.routes.draw do
 
   namespace :api, defaults: { format: 'json' } do
     namespace :v1 do
-      resources :users, only:[:index]
+      resources :users, only:[:index] do
+        collection do
+          get 'user_events'
+          get 'user_posts'
+          get 'user_followers'
+        end
+      end
       resources :registrations, only: [] do
         collection do
           post :sign_up
@@ -29,26 +35,28 @@ Rails.application.routes.draw do
           post 'update_user_location'
         end
       end
-      
-      resources :posts, only:[] do
+      resources :posts, only:[:destroy] do
         collection do
           get 'discover'
         end
+        member do
+          delete 'undo'
+        end
+        resources :post_likes, only:[:index]
+        resources :post_comments, only:[:index, :destroy]
       end
-      
       resources :member_followings, only:[] do
         collection do
           get 'get_followers'
           get 'get_following_requests'
         end
       end
-
-      resources :events, only:[:index] do
+      resources :events, only:[] do
         collection do
           get 'event_list_horizontal'
         end
       end
-      
+      resources :event_webs, only:[:index, :show, :destroy]
       resources :user_sessions, only:[] do
         collection do
           post :login

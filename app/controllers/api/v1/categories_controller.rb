@@ -1,4 +1,4 @@
-class Api::V1::CategoriesController < ApplicationController
+class Api::V1::CategoriesController < Api::V1::ApiProtectedController
   def index
     # params = {
     #   "auth_token": "111111111",
@@ -11,5 +11,21 @@ class Api::V1::CategoriesController < ApplicationController
       resp_data = {resp_data: {}, resp_status: 0, resp_message: 'Invalid Token', resp_error: 'error'}.as_json
       return render json: resp_data
     end
+  end
+  
+  def create
+    category = Category.new(category_params)
+    category.save!
+    resp_data    = {}
+    resp_status  = 1
+    resp_message = 'Success'
+    resp_errors  = ''
+    common_api_response(resp_data, resp_status, resp_message, resp_errors)
+  end
+  
+  
+  private
+  def category_params
+    params.require(:category).permit(:name)
   end
 end

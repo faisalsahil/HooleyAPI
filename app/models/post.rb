@@ -512,7 +512,7 @@ class Post < ApplicationRecord
 
   def self.posts_array_response(post_array, profile, sync_token=nil)
     posts = post_array.to_xml(
-        only: [:id, :post_title, :post_description, :datetime, :is_post_public, :is_deleted, :created_at, :updated_at, :post_type, :location, :latitude, :longitude],
+        only: [:id, :post_title, :event_id, :post_description, :datetime, :is_post_public, :is_deleted, :created_at, :updated_at, :post_type, :location, :latitude, :longitude],
         methods: [:likes_count, :comments_count],
         :procs => Proc.new { |options, post|
           options[:builder].tag!('liked_by_me', PostLike.liked_by_me(post, profile.id))

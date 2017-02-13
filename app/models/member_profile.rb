@@ -37,6 +37,10 @@ class MemberProfile < ApplicationRecord
   def posts_count
     self.posts.count
   end
+  
+  def events_count
+    self.events.count
+  end
 
   def followings_count
     self.member_followings.where(following_status: AppConstants::ACCEPTED).count
