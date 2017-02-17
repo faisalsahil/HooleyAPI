@@ -701,7 +701,7 @@ class Post < ApplicationRecord
     )
     is_following = MemberProfile.is_following(profile, current_user)
     member_profile = profile.as_json(
-        only: [:id, :photo, :country_id, :is_profile_public, :gender],
+        only: [:id, :photo, :country_id, :is_profile_public, :gender, :banner_image],
         include: {
             user: {
                 only: [:id, :first_name, :last_name]
