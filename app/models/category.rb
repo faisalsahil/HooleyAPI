@@ -3,7 +3,7 @@ class Category < ApplicationRecord
   def self.get_categories(data, current_user)
     categories = Category.all
     categories = categories.as_json(
-               only: [:id, :name]
+               only: [:id, :name, :is_deleted]
     )
     resp_data = {categories: categories}.as_json
     resp_status     = 1

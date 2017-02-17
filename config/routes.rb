@@ -35,7 +35,7 @@ Rails.application.routes.draw do
           post 'update_user_location'
         end
       end
-      resources :posts, only:[:destroy] do
+      resources :posts, only:[:index, :destroy] do
         collection do
           get 'discover'
         end
@@ -62,6 +62,7 @@ Rails.application.routes.draw do
           post :login
         end
       end
+      resources :dashboards, only:[:index]
     end
   end
 

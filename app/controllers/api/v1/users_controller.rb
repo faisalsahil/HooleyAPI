@@ -50,7 +50,8 @@ class Api::V1::UsersController < Api::V1::ApiProtectedController
     resp_errors  = ''
     common_api_response(resp_data, resp_status, resp_message, resp_errors, paging_data)
   end
-  
+
+  # calling from web
   def user_events
     member_profile = MemberProfile.find_by_id(params[:member_profile_id])
     if member_profile.present?
@@ -70,7 +71,8 @@ class Api::V1::UsersController < Api::V1::ApiProtectedController
     end
     common_api_response(resp_data, resp_status, resp_message, resp_errors, paging_data)
   end
-  
+
+  # calling from web
   def user_posts
     member_profile = MemberProfile.find_by_id(params[:member_profile_id])
     if member_profile.present?
@@ -90,7 +92,8 @@ class Api::V1::UsersController < Api::V1::ApiProtectedController
     end
     common_api_response(resp_data, resp_status, resp_message, resp_errors, paging_data)
   end
-  
+
+  # calling from web
   def user_followers
     member_profile = MemberProfile.find_by_id(params[:member_profile_id])
     if member_profile.present?

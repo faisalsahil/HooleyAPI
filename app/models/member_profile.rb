@@ -78,7 +78,7 @@ class MemberProfile < ApplicationRecord
 
   def member_profile(auth_token=nil)
     member_profile = self.as_json(
-        only: [:id, :photo, :country_id, :city_id, :is_profile_public, :default_group_id, :gender, :dob, :account_type, :high_school, :is_age_visible, :gender, :current_city, :home_town, :employer, :college, :high_school, :organization, :hobbies,:contact_email, :contact_phone, :contact_website, :contact_address],
+        only: [:id, :photo, :country_id, :city_id, :is_profile_public, :default_group_id, :gender, :dob, :account_type, :high_school, :is_age_visible, :gender, :current_city, :home_town, :employer, :college, :high_school, :organization, :hobbies,:contact_email, :contact_phone, :contact_website, :contact_address, :banner_image],
         methods: [:posts_count, :followings_count, :followers_count],
         include: {
             user: {
