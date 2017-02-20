@@ -2,6 +2,7 @@ class Event < ApplicationRecord
   
   include JsonBuilder
   include PgSearch
+  include AppConstants
   
   belongs_to :member_profile
   belongs_to :category
@@ -10,6 +11,7 @@ class Event < ApplicationRecord
   has_many   :event_hash_tags,   dependent: :destroy
   has_many   :hashtags, through: :event_hash_tags
   has_many   :event_members,     dependent: :destroy
+  has_many   :event_bookmarks,   dependent: :destroy
   has_many   :synchronizations, as: :media
   has_many   :posts
 
@@ -195,56 +197,78 @@ class Event < ApplicationRecord
       data     = data.with_indifferent_access
       per_page = (data[:per_page] || @@limit).to_i
       page     = (data[:page] || 1).to_i
-      if data[:filter_type].present? && data[:filter_type] == 'invited'
-         ids    = EventMember.where(member_profile_id: current_user.profile_id).pluck(:event_id)
-         events = Event.where(id: ids)
-      elsif data[:type].present? && data[:type] == 'search'
+      
+      events   = Event.all
+      if data[:type].present? && data[:type] == AppConstants::SEARCH
         events  = search_event_list(data)
-      elsif data[:type].present? && data[:type] == 'upcoming' && data[:list_type] == 'day'
-        events  = Event.where('Date(start_date) = ?',  Date.today)
-      elsif data[:type].present? && data[:type] == 'upcoming' && data[:list_type] == 'np_day'
-        events  = Event.where('Date(start_date) = ?',  Date.today + 1.day)
-      elsif data[:type].present? && data[:type] == 'upcoming' && data[:list_type] == 'week'
-        events  = Event.where('Date(start_date) > ? AND Date(start_date) <= ?', Date.today + 1.day, Date.today + 1.week)
-      elsif data[:type].present? && data[:type] == 'upcoming' && data[:list_type] == 'all'
-        events  = Event.where('Date(start_date) > ?', Date.today + 1.week)
-      elsif data[:type].present? && data[:type] == 'past' && data[:list_type] == 'day'
-        events  = Event.where('Date(start_date) = ?',  Date.today - 1.day)
-      elsif data[:type].present? && data[:type] == 'past' && data[:list_type] == 'np_day'
-        events  = Event.where('Date(start_date) = ?',  Date.today - 2.day)
-      elsif data[:type].present? && data[:type] == 'past' && data[:list_type] == 'week'
-        events  = Event.where('Date(start_date) >= ? AND Date(start_date) < ?', Date.today - 1.week, Date.today - 2.day)
-      elsif data[:type].present? && data[:type] == 'past' && data[:list_type] == 'all'
-        events  = Event.where('Date(start_date) < ?', Date.today - 1.week)
+      elsif data[:type].present? && data[:type] == AppConstants::UPCOMING && data[:list_type] == AppConstants::DAY
+        events  = events.where('Date(start_date) = ?',  Date.today)
+      elsif data[:type].present? && data[:type] == AppConstants::UPCOMING && data[:list_type] == AppConstants::NP_DAY
+        events  = events.where('Date(start_date) = ?',  Date.today + 1.day)
+      elsif data[:type].present? && data[:type] == AppConstants::UPCOMING && data[:list_type] == AppConstants::WEEK
+        events  = events.where('Date(start_date) > ? AND Date(start_date) <= ?', Date.today + 1.day, Date.today + 1.week)
+      elsif data[:type].present? && data[:type] == AppConstants::UPCOMING && data[:list_type] == AppConstants::ALL
+        events  = events.where('Date(start_date) > ?', Date.today + 1.week)
+      elsif data[:type].present? && data[:type] == AppConstants::PAST && data[:list_type] == AppConstants::DAY
+        events  = events.where('Date(start_date) = ?',  Date.today - 1.day)
+      elsif data[:type].present? && data[:type] == AppConstants::PAST && data[:list_type] == AppConstants::NP_DAY
+        events  = events.where('Date(start_date) = ?',  Date.today - 2.day)
+      elsif data[:type].present? && data[:type] == AppConstants::PAST && data[:list_type] == AppConstants::WEEK
+        events  = events.where('Date(start_date) >= ? AND Date(start_date) < ?', Date.today - 1.week, Date.today - 2.day)
+      elsif data[:type].present? && data[:type] == AppConstants::PAST && data[:list_type] == AppConstants::ALL
+        events  = events.where('Date(start_date) < ?', Date.today - 1.week)
       end
+
+      #===============   Filter events here  ===========================
+      if data[:filter_type].present? && ( data[:filter_type] == AppConstants::INVITED || data[:filter_type] == AppConstants::REGISTERED )
+        events = events.joins(:event_members).where(event_members: {member_profile_id: current_user.profile_id, invitation_status: data[:filter_type]})
+      end
+
+      if data[:filter_type].present? && data[:filter_type] == AppConstants::BOOKMARK
+        events = events.joins(:event_bookmarks).where(event_bookmarks: {member_profile_id: current_user.profile_id, is_bookmark: true})
+      end
+      
+      if data[:filter_type].present? && data[:filter_type] == AppConstants::ALL
+        events    =  Event.where(is_public: true)
+      end
+
+      if data[:keyword].present?
+        events    =  events.where('lower(event_name) like ? OR lower(event_details) like ?', "%#{data[:keyword]}%".downcase, "%#{data[:keyword]}%".downcase)
+      end
+      # =================================================================
+      
       events           =  events.page(page.to_i).per_page(per_page.to_i)
       paging_data      =  JsonBuilder.get_paging_data(page, per_page, events)
-      events =  events.to_xml(
-          only:[:id, :event_name, :event_details, :start_date, :end_date, :location, :message_from_host],
-          :procs => Proc.new { |options, event|
-            options[:builder].tag!('is_bookmarked', EventBookmark.is_bookmarked(event, current_user.profile_id))
-          },
-          include:{
-              member_profile:{
-                  only: [:id, :photo],
-                  include:{
-                      user:{
-                          only: [:id, :first_name, :email, :last_name]
-                      }
-                  }
-              },
-              event_attachments:{
-                  only:[:id, :event_id, :attachment_type, :message, :attachment_url, :thumbnail_url, :poster_skin]
-              },
-              event_co_hosts:{
-                  only:[:id, :event_id, :member_profile_id]
-              },
-              hashtags:{
-                  only:[:id, :name]
-              }
-          }
-      )
-      resp_data       = Hash.from_xml(events).as_json
+      if events.present?
+        events =  events.to_xml(
+            only:[:id, :event_name, :event_details, :start_date, :end_date, :location, :message_from_host],
+            :procs => Proc.new { |options, event|
+              options[:builder].tag!('is_bookmarked', EventBookmark.is_bookmarked(event, current_user.profile_id))
+            },
+            include:{
+                member_profile:{
+                    only: [:id, :photo],
+                    include:{
+                        user:{
+                            only: [:id, :first_name, :email, :last_name]
+                        }
+                    }
+                },
+                event_attachments:{
+                    only:[:id, :event_id, :attachment_type, :message, :attachment_url, :thumbnail_url, :poster_skin]
+                },
+                event_co_hosts:{
+                    only:[:id, :event_id, :member_profile_id]
+                },
+                hashtags:{
+                    only:[:id, :name]
+                }
+            }
+        )
+        resp_data       = Hash.from_xml(events).as_json
+      else
+        resp_data       = {events: []}.as_json
+      end
       resp_status     = 1
       resp_message    = 'Event list'
       resp_errors     = ''
@@ -293,9 +317,11 @@ class Event < ApplicationRecord
       page     = (data[:page] || 1).to_i
       event    = Event.find_by_id(data[:event_id])
       if event.present?
-        posts = event.posts
         if data[:filter_type].present?
-          posts = posts.where(post_type: data[:filter_type])
+          posts = event.posts.joins(:post_attachments).where(post_attachments: {attachment_type: data[:filter_type]})
+          # posts = posts.where(post_type: data[:filter_type])
+        else
+          posts = event.posts
         end
         posts           =  posts.page(page.to_i).per_page(per_page.to_i)
         paging_data     =  JsonBuilder.get_paging_data(page, per_page, posts)

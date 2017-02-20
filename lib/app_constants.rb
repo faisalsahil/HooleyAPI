@@ -10,4 +10,15 @@ module AppConstants
   PENDING           = 'pending'
   REJECTED          = 'rejected'
   TIMELINE          =  'TimeLine'
+  
+  SEARCH   = 'search'
+  UPCOMING = 'upcoming'
+  DAY      = 'day'
+  NP_DAY   = 'np_day'
+  WEEK     = 'week'
+  ALL      = 'all'
+  PAST     = 'past'
+  INVITED  = 'invited'
+  REGISTERED = 'registered'
+  BOOKMARK  = 'bookmarked'
 end

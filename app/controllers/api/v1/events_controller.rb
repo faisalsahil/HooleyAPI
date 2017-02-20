@@ -7,6 +7,7 @@ class Api::V1::EventsController < ApplicationController
     #     "page": 1,
     #     "per_page": 10,
     #     "list_type": 'day',
+    #     "filter_type": 'invited/registered/bookmarked'
     # }
     
     # params = {
@@ -15,6 +16,7 @@ class Api::V1::EventsController < ApplicationController
     #     "page": 1,
     #     "per_page": 10,
     #     "list_type": 'np_day',
+    #     "filter_type": 'invited/bookmarked',
     # }
     #
     # params = {
@@ -23,6 +25,7 @@ class Api::V1::EventsController < ApplicationController
     #     "page": 1,
     #     "per_page": 10,
     #     "list_type": 'week',
+    #     "filter_type": 'invited/bookmarked'
     # }
 
     # params = {
@@ -31,6 +34,7 @@ class Api::V1::EventsController < ApplicationController
     #     "page": 1,
     #     "per_page": 10,
     #     "list_type": 'all',
+    #     "filter_type": 'invited/bookmarked'
     # }
     
     # params = {
@@ -39,6 +43,7 @@ class Api::V1::EventsController < ApplicationController
     #     "page": 2,
     #     "per_page": 10,
     #     "list_type": 'day',
+    #     "filter_type": 'invited/bookmarked'
     # }
 
     # params = {
@@ -47,6 +52,7 @@ class Api::V1::EventsController < ApplicationController
     #     "page": 1,
     #     "per_page": 10,
     #     "list_type": 'np_day',
+    #     "filter_type": 'invited/bookmarked'
     # }
 
     # params = {
@@ -55,6 +61,7 @@ class Api::V1::EventsController < ApplicationController
     #     "page": 1,
     #     "per_page": 10,
     #     "list_type": 'week',
+    #     "filter_type": 'invited/bookmarked'
     # }
 
     # params = {
@@ -63,6 +70,7 @@ class Api::V1::EventsController < ApplicationController
     #     "page": 1,
     #     "per_page": 10,
     #     "list_type": 'all',
+    #     "filter_type": 'invited/bookmarked'
     # }
     
     # params = {
@@ -81,13 +89,6 @@ class Api::V1::EventsController < ApplicationController
     #     "is_paid": true
     # }
 
-    # params = {
-    #     "auth_token": "111111111",
-    #     "filter_type": 'invited',
-    #     "page": 1,
-    #     "per_page": 10,
-    # }
-
     user_session = UserSession.find_by_auth_token(params[:auth_token])
     if user_session.present?
       response = Event.event_list_horizontal(params, user_session.user)
@@ -96,23 +97,6 @@ class Api::V1::EventsController < ApplicationController
       resp_data = {resp_data: {}, resp_status: 0, resp_message: 'Invalid Token', resp_error: 'error'}.as_json
       return render json: resp_data
     end
-  end
-  
-  def invited_events
-    # params = {
-    #   "auth_token": "111111111",
-    #   "per_page":10,
-    #   "page":1,
-    #   "search_key": "hello"
-    # }
-    # user_session = UserSession.find_by_auth_token(params[:auth_token])
-    # if user_session.present?
-    #   response = Post.discover(params, user_session.user)
-    #   render json: response
-    # else
-    #   resp_data = {resp_data: {}, resp_status: 0, resp_message: 'Invalid Token', resp_error: 'error'}.as_json
-    #   return render json: resp_data
-    # end
   end
   
   def event_posts
@@ -132,4 +116,40 @@ class Api::V1::EventsController < ApplicationController
       return render json: resp_data
     end
   end
+  
+  def event_register
+    # params = {
+    #   "auth_token": "111111111",
+    #   "event_id": 26,
+    # }
+    user_session = UserSession.find_by_auth_token(params[:auth_token])
+    current_user = user_session.user
+    if user_session.present?
+      event_member =  EventMember.find_by_event_id_and_member_profile_id(params[:event_id], current_user.profile_id)
+      if event_member.present?
+        event_member.invitation_status = 'registered'
+      else
+        event_member = EventMember.new
+        event_member.member_profile_id = current_user.profile_id
+        event_member.event_id  = params[:event_id]
+      end
+      if event_member.save
+        resp_data       = {}
+        resp_status     = 1
+        resp_message    = 'Registered.'
+        resp_errors     = ''
+      else
+        resp_data       = {}
+        resp_status     = 0
+        resp_message    = 'Errors'
+        resp_errors     = 'Not registered'
+      end
+      response = {resp_data: resp_data, resp_status: resp_status, resp_message: resp_message, resp_error: resp_errors}.as_json
+      render json: response
+    else
+      response = {resp_data: {}, resp_status: 0, resp_message: 'Invalid Token', resp_error: 'error'}.as_json
+      return render json: response
+    end
+  end
+  
 end

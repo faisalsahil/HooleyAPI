@@ -55,6 +55,7 @@ Rails.application.routes.draw do
         collection do
           get 'event_list_horizontal'
           get 'event_posts'
+          post 'event_register'
         end
       end
       resources :event_webs, only:[:index, :show, :destroy]
