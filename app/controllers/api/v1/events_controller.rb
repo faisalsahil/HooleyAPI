@@ -81,9 +81,51 @@ class Api::V1::EventsController < ApplicationController
     #     "is_paid": true
     # }
 
+    # params = {
+    #     "auth_token": "111111111",
+    #     "filter_type": 'invited',
+    #     "page": 1,
+    #     "per_page": 10,
+    # }
+
     user_session = UserSession.find_by_auth_token(params[:auth_token])
     if user_session.present?
       response = Event.event_list_horizontal(params, user_session.user)
+      render json: response
+    else
+      resp_data = {resp_data: {}, resp_status: 0, resp_message: 'Invalid Token', resp_error: 'error'}.as_json
+      return render json: resp_data
+    end
+  end
+  
+  def invited_events
+    # params = {
+    #   "auth_token": "111111111",
+    #   "per_page":10,
+    #   "page":1,
+    #   "search_key": "hello"
+    # }
+    # user_session = UserSession.find_by_auth_token(params[:auth_token])
+    # if user_session.present?
+    #   response = Post.discover(params, user_session.user)
+    #   render json: response
+    # else
+    #   resp_data = {resp_data: {}, resp_status: 0, resp_message: 'Invalid Token', resp_error: 'error'}.as_json
+    #   return render json: resp_data
+    # end
+  end
+  
+  def event_posts
+    # params = {
+    #   "auth_token": "111111111",
+    #   "event_id": 13,
+    #   "per_page":10,
+    #   "page":1,
+    #   "filter_type": "photo"
+    # }
+    user_session = UserSession.find_by_auth_token(params[:auth_token])
+    if user_session.present?
+      response = Event.event_posts(params, user_session.user)
       render json: response
     else
       resp_data = {resp_data: {}, resp_status: 0, resp_message: 'Invalid Token', resp_error: 'error'}.as_json

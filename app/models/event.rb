@@ -192,31 +192,38 @@ class Event < ApplicationRecord
   
   def self.event_list_horizontal(data, current_user)
     begin
+      data     = data.with_indifferent_access
       per_page = (data[:per_page] || @@limit).to_i
       page     = (data[:page] || 1).to_i
-      if data[:type] == 'search'
+      if data[:filter_type].present? && data[:filter_type] == 'invited'
+         ids    = EventMember.where(member_profile_id: current_user.profile_id).pluck(:event_id)
+         events = Event.where(id: ids)
+      elsif data[:type].present? && data[:type] == 'search'
         events  = search_event_list(data)
-      elsif data[:type] == 'upcoming' && data[:list_type] == 'day'
+      elsif data[:type].present? && data[:type] == 'upcoming' && data[:list_type] == 'day'
         events  = Event.where('Date(start_date) = ?',  Date.today)
-      elsif data[:type] == 'upcoming' && data[:list_type] == 'np_day'
+      elsif data[:type].present? && data[:type] == 'upcoming' && data[:list_type] == 'np_day'
         events  = Event.where('Date(start_date) = ?',  Date.today + 1.day)
-      elsif data[:type] == 'upcoming' && data[:list_type] == 'week'
+      elsif data[:type].present? && data[:type] == 'upcoming' && data[:list_type] == 'week'
         events  = Event.where('Date(start_date) > ? AND Date(start_date) <= ?', Date.today + 1.day, Date.today + 1.week)
-      elsif data[:type] == 'upcoming' && data[:list_type] == 'all'
+      elsif data[:type].present? && data[:type] == 'upcoming' && data[:list_type] == 'all'
         events  = Event.where('Date(start_date) > ?', Date.today + 1.week)
-      elsif data[:type] == 'past' && data[:list_type] == 'day'
+      elsif data[:type].present? && data[:type] == 'past' && data[:list_type] == 'day'
         events  = Event.where('Date(start_date) = ?',  Date.today - 1.day)
-      elsif data[:type] == 'past' && data[:list_type] == 'np_day'
+      elsif data[:type].present? && data[:type] == 'past' && data[:list_type] == 'np_day'
         events  = Event.where('Date(start_date) = ?',  Date.today - 2.day)
-      elsif data[:type] == 'past' && data[:list_type] == 'week'
+      elsif data[:type].present? && data[:type] == 'past' && data[:list_type] == 'week'
         events  = Event.where('Date(start_date) >= ? AND Date(start_date) < ?', Date.today - 1.week, Date.today - 2.day)
-      elsif data[:type] == 'past' && data[:list_type] == 'all'
+      elsif data[:type].present? && data[:type] == 'past' && data[:list_type] == 'all'
         events  = Event.where('Date(start_date) < ?', Date.today - 1.week)
       end
       events           =  events.page(page.to_i).per_page(per_page.to_i)
       paging_data      =  JsonBuilder.get_paging_data(page, per_page, events)
-      events =  events.as_json(
+      events =  events.to_xml(
           only:[:id, :event_name, :event_details, :start_date, :end_date, :location, :message_from_host],
+          :procs => Proc.new { |options, event|
+            options[:builder].tag!('is_bookmarked', EventBookmark.is_bookmarked(event, current_user.profile_id))
+          },
           include:{
               member_profile:{
                   only: [:id, :photo],
@@ -237,7 +244,7 @@ class Event < ApplicationRecord
               }
           }
       )
-      resp_data       = {events: events}.as_json
+      resp_data       = Hash.from_xml(events).as_json
       resp_status     = 1
       resp_message    = 'Event list'
       resp_errors     = ''
@@ -278,6 +285,45 @@ class Event < ApplicationRecord
       end
     end
     events
+  end
+  
+  def self.event_posts(data, current_user)
+    begin
+      per_page = (data[:per_page] || @@limit).to_i
+      page     = (data[:page] || 1).to_i
+      event    = Event.find_by_id(data[:event_id])
+      if event.present?
+        posts = event.posts
+        if data[:filter_type].present?
+          posts = posts.where(post_type: data[:filter_type])
+        end
+        posts           =  posts.page(page.to_i).per_page(per_page.to_i)
+        paging_data     =  JsonBuilder.get_paging_data(page, per_page, posts)
+        if posts.present?
+          resp_data       =  Post.posts_array_response(posts, current_user.profile)
+        else
+          resp_data     = {posts: []}.as_json
+        end
+        resp_status     = 1
+        resp_message    = 'success'
+        resp_errors     = ''
+      else
+        resp_data       = {}
+        resp_status     = 0
+        resp_message    = 'Errors'
+        resp_errors     = 'Event not found.'
+        paging_data     = ''
+      end
+    rescue Exception => e
+      resp_data       = {}
+      resp_status     = 0
+      resp_message    = 'error'
+      resp_errors     = e
+      paging_data     = ''
+    end
+    resp_request_id = ''
+    resp_request_id = data[:request_id] if data[:request_id].present?
+    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
   end
 end
 

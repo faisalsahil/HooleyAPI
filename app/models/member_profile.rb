@@ -8,6 +8,7 @@ class MemberProfile < ApplicationRecord
   has_many   :posts
   has_many   :events
   has_many   :profile_interests
+  has_many   :event_bookmarks
   belongs_to :country
   belongs_to :city
   belongs_to :occupation
@@ -17,7 +18,7 @@ class MemberProfile < ApplicationRecord
   belongs_to :religion
   belongs_to :language
   belongs_to :ethnic_background
-
+  
   accepts_nested_attributes_for :user, :profile_interests
 
   @@limit = 10

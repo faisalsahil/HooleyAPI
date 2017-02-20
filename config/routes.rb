@@ -54,6 +54,7 @@ Rails.application.routes.draw do
       resources :events, only:[] do
         collection do
           get 'event_list_horizontal'
+          get 'event_posts'
         end
       end
       resources :event_webs, only:[:index, :show, :destroy]
@@ -63,6 +64,7 @@ Rails.application.routes.draw do
         end
       end
       resources :dashboards, only:[:index]
+      resources :event_bookmarks, only:[:index, :create]
     end
   end
 
