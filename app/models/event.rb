@@ -57,6 +57,10 @@ class Event < ApplicationRecord
             event_hash_tag.save
           end
         end
+        event.event_members.each do |member|
+          member.is_invited = true
+          member.save
+        end
         sync_event_id   = event.id
         resp_data       = {}
         resp_status     = 1
@@ -402,8 +406,8 @@ class Event < ApplicationRecord
       events = events.to_xml(
           only:[:id, :event_name, :member_profile_id, :location, :latitude, :longitude, :radius, :event_details, :is_friends_allowed, :is_public, :is_paid, :category_id, :event_type, :start_date, :end_date, :created_at, :updated_at, :custom_event, :message_from_host],
           :procs => Proc.new { |options, event|
-            options[:builder].tag!('is_bookmarked', EventBookmark.is_bookmarked(event, current_user.profile_id))
-            options[:builder].tag!('is_registered', EventMember.is_registered(event, current_user.profile_id))
+            options[:builder].tag!('is_bookmarked',   EventBookmark.is_bookmarked(event, current_user.profile_id))
+            options[:builder].tag!('is_registered',   EventMember.is_registered(event, current_user.profile_id))
             options[:builder].tag!('visiting_status', EventMember.visiting_status(event, current_user.profile_id))
           },
           include:{

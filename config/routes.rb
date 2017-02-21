@@ -59,6 +59,7 @@ Rails.application.routes.draw do
           get 'event_guests'
           post 'event_register'
           post 'event_attending_status'
+          post 'event_add_members'
         end
       end
       resources :event_webs, only:[:index, :show, :destroy]
