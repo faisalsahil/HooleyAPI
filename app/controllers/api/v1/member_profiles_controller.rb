@@ -21,7 +21,11 @@ class Api::V1::MemberProfilesController < ApplicationController
     #     "auth_token": "111111111",
     #     "page": 1,
     #     "per_page": 10,
-    #     "member_profile_id": 3
+    #     "member_profile_id": 4,
+    #     "filter_type": "video",
+    #     "type": "near_me",
+    #     "latitude":  "23.232323",
+    #     "longitude": "23.2323223"
     # }
     user_session = UserSession.find_by_auth_token(params[:auth_token])
     if user_session.present?

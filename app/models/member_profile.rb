@@ -330,9 +330,24 @@ class MemberProfile < ApplicationRecord
       data         = data.with_indifferent_access
       per_page     = (data[:per_page] || @@limit).to_i
       page         = (data[:page] || 1).to_i
-    
+
       profile      = MemberProfile.find_by_id(data[:member_profile_id])
-      posts        = profile.posts
+      if data[:type].present?
+        if data[:type] == AppConstants::NEAR_ME
+          posts = Post.within(5, :origin => [data[:latitude], data[:longitude]])
+          posts = posts.where(is_deleted: false, is_post_public: true)
+        end
+        if data[:type] == AppConstants::FOLLOWING
+          following_ids = profile.member_followings.where(following_status: AppConstants::ACCEPTED).pluck(:following_profile_id)
+          posts = Post.where("(member_profile_id IN (?)) AND is_deleted = ? OR is_post_public = ?", following_ids, false, true).distinct
+        end
+      else
+        posts   = profile.posts
+      end
+      
+      if data[:filter_type].present?
+        posts = posts.joins(:post_attachments).where(post_attachments: {attachment_type: data[:filter_type]})
+      end
       
       posts         = posts.order("created_at DESC")
       posts         = posts.page(page.to_i).per_page(per_page.to_i)

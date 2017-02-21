@@ -606,34 +606,6 @@ class Post < ApplicationRecord
       sync_object.destroy
     end
   end
-  
-  def self.near_me_posts(data, current_user)
-    begin
-      data     = data.with_indifferent_access
-      profile  = current_user.profile
-      per_page = (data[:per_page] || @@limit).to_i
-      page     = (data[:page] || 1).to_i
-      
-      posts = Post.within(5, :origin => [profile.latitude, profile.longitude])
-      posts = posts.where(is_deleted: false)
-      posts = posts.order("created_at DESC")
-      posts = posts.page(page.to_i).per_page(per_page.to_i)
-      
-      paging_data = JsonBuilder.get_paging_data(page, per_page, posts)
-      resp_data    = posts_array_response(posts, profile)
-      resp_status  = 1
-      resp_message = 'Post list'
-      resp_errors  = ''
-    rescue Exception => e
-      resp_data    = ''
-      resp_status  = 0
-      paging_data  = ''
-      resp_message = 'error'
-      resp_errors  = e
-    end
-    resp_request_id   = data[:request_id]
-    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
-  end
 
   def self.timeline_posts_array_response(posts, profile, current_user)
     @@current_profile  = current_user.profile
@@ -724,7 +696,6 @@ class Post < ApplicationRecord
         users     = User.search_by_title(search_key)
         hash_tags = Hashtag.search_by_title(search_key)
         if posts.present? || users.present? || hash_tags.present?
-          # paging_data, resp_data = discover_search(search_records, page, per_page, data[:search][:type], current_user)
           paging_data, resp_data = discover_search_new(posts, users, hash_tags, page, per_page, data[:type], current_user)
           resp_status = 1
           resp_message = 'Discover list'

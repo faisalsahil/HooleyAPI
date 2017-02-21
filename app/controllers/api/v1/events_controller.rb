@@ -1,4 +1,5 @@
 class Api::V1::EventsController < ApplicationController
+  include AppConstants
   
   def event_list_horizontal
     # params = {
@@ -7,7 +8,7 @@ class Api::V1::EventsController < ApplicationController
     #     "page": 1,
     #     "per_page": 10,
     #     "list_type": 'day',
-    #     "filter_type": 'invited/registered/bookmarked'
+    #     # "filter_type": 'invited/registered/bookmarked'
     # }
     
     # params = {
@@ -127,7 +128,7 @@ class Api::V1::EventsController < ApplicationController
     if user_session.present?
       event_member =  EventMember.find_by_event_id_and_member_profile_id(params[:event_id], current_user.profile_id)
       if event_member.present?
-        event_member.invitation_status = 'registered'
+        event_member.invitation_status = AppConstants::REGISTERED
       else
         event_member = EventMember.new
         event_member.member_profile_id = current_user.profile_id
@@ -152,4 +153,42 @@ class Api::V1::EventsController < ApplicationController
     end
   end
   
+  def profile_events
+    # params = {
+    #   "auth_token": "111111111",
+    #   "per_page":10,
+    #   "page":1,
+    #   "member_profile_id": 4,
+    #   "search_key": "chuburji"
+    # }
+    user_session = UserSession.find_by_auth_token(params[:auth_token])
+    if user_session.present?
+      response = Event.profile_events(params, user_session.user)
+      render json: response
+    else
+      resp_data = {resp_data: {}, resp_status: 0, resp_message: 'Invalid Token', resp_error: 'error'}.as_json
+      return render json: resp_data
+    end
+  end
+  
+  def event_guests
+    # params = {
+    #   "auth_token": "111111111",
+    #   "per_page":10,
+    #   "page":1,
+    #   "event_id": 13,
+    #   "type": "registered",
+    #   # "type": "registered/on_way/here_now/gone/",
+    #   "filter_type": "male",
+    #   "search_key": "chuburij"
+    # }
+    user_session = UserSession.find_by_auth_token(params[:auth_token])
+    if user_session.present?
+      response = Event.event_guests(params, user_session.user)
+      render json: response
+    else
+      resp_data = {resp_data: {}, resp_status: 0, resp_message: 'Invalid Token', resp_error: 'error'}.as_json
+      return render json: resp_data
+    end
+  end
 end

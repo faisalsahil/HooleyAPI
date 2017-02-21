@@ -84,7 +84,7 @@ class Event < ApplicationRecord
     begin
       data  = data.with_indifferent_access
       event = Event.where(id: data[:event][:id])
-      resp_data       = events_response(event)
+      resp_data       = events_response(event, current_user)
       resp_status     = 1
       resp_message    = 'Event details'
       resp_errors     = ''
@@ -124,72 +124,13 @@ class Event < ApplicationRecord
     sync_object.synced_date       = events.first.updated_at
     sync_object.save!
   
-    resp_data       = events_response(events, sync_object.sync_token)
+    resp_data       = events_response(events, user, sync_object.sync_token)
     resp_status     = 1
     resp_request_id = ''
     resp_message    = 'Events'
     resp_errors     = ''
     response        = JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, type: "Sync")
     ProfileJob.perform_later response, user.id
-  end
-
-  def self.events_response(events, sync_token=nil)
-    events = events.as_json(
-        only: [:id, :event_name, :member_profile_id, :location, :latitude, :longitude, :radius, :event_details, :is_frields_allowed, :is_public, :is_paid, :category_id, :event_type, :start_date, :end_date, :created_at, :updated_at, :custom_event, :message_from_host],
-        methods:[:post_count],
-        include:{
-            member_profile:{
-                only: [:id, :photo],
-                include:{
-                    user:{
-                        only: [:id, :first_name, :email, :last_name]
-                    }
-                }
-            },
-            category:{
-              only:[:id, :name]
-            },
-            event_attachments:{
-                only:[:id, :event_id, :attachment_type, :message, :attachment_url, :thumbnail_url, :poster_skin]
-            },
-            event_co_hosts:{
-                only:[:id, :event_id, :member_profile_id],
-                include:{
-                  member_profile: {
-                      only: [:id, :photo],
-                      include: {
-                          user: {
-                              only: [:id, :first_name, :last_name]
-                          }
-                      }
-                  }
-                }
-            },
-            hashtags:{
-                only:[:id, :name]
-            },
-            event_members:{
-                only: [:id],
-                include:{
-                    member_profile: {
-                        only: [:id, :photo],
-                        include: {
-                            user: {
-                                only: [:id, :first_name, :last_name]
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    )
-  
-    if sync_token.present?
-      { events: events }.as_json.merge!(sync_token: sync_token)
-    else
-      { events: events }.as_json
-    end
-
   end
   
   def self.event_list_horizontal(data, current_user)
@@ -227,7 +168,7 @@ class Event < ApplicationRecord
       if data[:filter_type].present? && data[:filter_type] == AppConstants::BOOKMARK
         events = events.joins(:event_bookmarks).where(event_bookmarks: {member_profile_id: current_user.profile_id, is_bookmark: true})
       end
-      
+
       if data[:filter_type].present? && data[:filter_type] == AppConstants::ALL
         events    =  Event.where(is_public: true)
       end
@@ -239,36 +180,8 @@ class Event < ApplicationRecord
       
       events           =  events.page(page.to_i).per_page(per_page.to_i)
       paging_data      =  JsonBuilder.get_paging_data(page, per_page, events)
-      if events.present?
-        events =  events.to_xml(
-            only:[:id, :event_name, :event_details, :start_date, :end_date, :location, :message_from_host],
-            :procs => Proc.new { |options, event|
-              options[:builder].tag!('is_bookmarked', EventBookmark.is_bookmarked(event, current_user.profile_id))
-            },
-            include:{
-                member_profile:{
-                    only: [:id, :photo],
-                    include:{
-                        user:{
-                            only: [:id, :first_name, :email, :last_name]
-                        }
-                    }
-                },
-                event_attachments:{
-                    only:[:id, :event_id, :attachment_type, :message, :attachment_url, :thumbnail_url, :poster_skin]
-                },
-                event_co_hosts:{
-                    only:[:id, :event_id, :member_profile_id]
-                },
-                hashtags:{
-                    only:[:id, :name]
-                }
-            }
-        )
-        resp_data       = Hash.from_xml(events).as_json
-      else
-        resp_data       = {events: []}.as_json
-      end
+      
+      resp_data       = events_response(events, current_user)
       resp_status     = 1
       resp_message    = 'Event list'
       resp_errors     = ''
@@ -319,7 +232,6 @@ class Event < ApplicationRecord
       if event.present?
         if data[:filter_type].present?
           posts = event.posts.joins(:post_attachments).where(post_attachments: {attachment_type: data[:filter_type]})
-          # posts = posts.where(post_type: data[:filter_type])
         else
           posts = event.posts
         end
@@ -350,6 +262,165 @@ class Event < ApplicationRecord
     resp_request_id = ''
     resp_request_id = data[:request_id] if data[:request_id].present?
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
+  end
+  
+  def self.profile_events(data, current_user)
+    begin
+      per_page = (data[:per_page] || @@limit).to_i
+      page     = (data[:page] || 1).to_i
+      member_profile = MemberProfile.find_by_id(data[:member_profile_id])
+      if member_profile.present?
+        if member_profile.id == current_user.profile_id
+          event_ids= EventMember.where(member_profile_id: member_profile.id).pluck(:event_id)
+          events   = Event.where('member_profile_id = ? OR id IN(?)', member_profile.id, event_ids)
+        else
+          #  Is my friend?
+          event_ids= EventMember.where(member_profile_id: member_profile.id).pluck(:event_id)
+          events   = Event.where('(member_profile_id = ? OR id IN(?)) AND is_public = ?', member_profile.id, event_ids, true)
+        end
+        
+        if data[:search_key].present?
+          events = events.where('lower(event_name) like ? OR lower(event_details) like ?', "%#{data[:search_key]}%".downcase, "%#{data[:search_key]}%".downcase)
+        end
+        
+        events   =  events.page(page.to_i).per_page(per_page.to_i)
+        paging_data     =  JsonBuilder.get_paging_data(page, per_page, events)
+        resp_data       = events_response(events, current_user)
+        resp_status     = 1
+        resp_message    = 'success'
+        resp_errors     = ''
+      else
+        paging_data     =  ''
+        resp_data       = {}
+        resp_status     = 0
+        resp_message    = 'error'
+        resp_errors     = 'Profile not found'
+      end
+    rescue Exception => e
+      resp_data       = {}
+      resp_status     = 0
+      resp_message    = 'error'
+      resp_errors     = e
+      paging_data     = ''
+    end
+    resp_request_id = ''
+    resp_request_id = data[:request_id] if data[:request_id].present?
+    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
+  end
+  
+  def self.event_guests(data, current_user)
+    begin
+      per_page = (data[:per_page] || @@limit).to_i
+      page     = (data[:page] || 1).to_i
+      event_members  = EventMember.where(event_id: data[:event_id])
+      if data[:type].present? &&  data[:type] ==  AppConstants::REGISTERED
+        event_members  = event_members.where(invitation_status: AppConstants::REGISTERED)
+      end
+
+      if data[:type].present? &&  data[:type] ==  AppConstants::ON_WAY
+        event_members  = event_members.where(invitation_status: AppConstants::REGISTERED, on_the_way: true)
+      end
+      
+      if data[:type].present? &&  data[:type] ==  AppConstants::HERE_NOW
+        event_members  = event_members.where(invitation_status: AppConstants::REGISTERED, reached: true)
+      end
+
+      if data[:type].present? &&  data[:type] ==  AppConstants::GONE
+        event_members  = event_members.where(invitation_status: AppConstants::REGISTERED, gone: true)
+      end
+      
+      profile_ids     = event_members.pluck(:member_profile_id)
+      member_profiles = MemberProfile.where(id: profile_ids)
+      if data[:filter_type].present? &&  data[:filter_type]
+        member_profiles = member_profiles.where(gender: data[:filter_type])
+      end
+      member_profiles  =  member_profiles.page(page.to_i).per_page(per_page.to_i)
+      paging_data      =  JsonBuilder.get_paging_data(page, per_page, member_profiles)
+      member_profiles  =  member_profiles.as_json(
+         only: [:id, :photo],
+         include:{
+             user: {
+                 only: [:id, :first_name, :last_name]
+             }
+         }
+      )
+      resp_data       = {member_profiles: member_profiles}.as_json
+      resp_status     = 1
+      resp_message    = 'success'
+      resp_errors     = ''
+    rescue Exception => e
+      resp_data       = {}
+      resp_status     = 0
+      resp_message    = 'error'
+      resp_errors     = e
+      paging_data     = ''
+    end
+    resp_request_id = ''
+    resp_request_id = data[:request_id] if data[:request_id].present?
+    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
+  end
+
+  def self.events_response(events, current_user, sync_token=nil)
+    if events.present?
+      events = events.to_xml(
+          only:[:id, :event_name, :member_profile_id, :location, :latitude, :longitude, :radius, :event_details, :is_friends_allowed, :is_public, :is_paid, :category_id, :event_type, :start_date, :end_date, :created_at, :updated_at, :custom_event, :message_from_host],
+          :procs => Proc.new { |options, event|
+            options[:builder].tag!('is_bookmarked', EventBookmark.is_bookmarked(event, current_user.profile_id))
+          },
+          include:{
+              member_profile:{
+                  only: [:id, :photo],
+                  include:{
+                      user:{
+                          only: [:id, :first_name, :last_name, :email]
+                      }
+                  }
+              },
+              category:{
+                  only:[:id, :name]
+              },
+              event_attachments:{
+                  only:[:id, :event_id, :attachment_type, :message, :attachment_url, :thumbnail_url, :poster_skin]
+              },
+              event_co_hosts:{
+                  only:[:id, :event_id, :member_profile_id],
+                  include:{
+                      member_profile: {
+                          only: [:id, :photo],
+                          include: {
+                              user: {
+                                  only: [:id, :first_name, :last_name]
+                              }
+                          }
+                      }
+                  }
+              },
+              hashtags:{
+                  only:[:id, :name]
+              },
+              event_members:{
+                  only: [:id],
+                  include:{
+                      member_profile: {
+                          only: [:id, :photo],
+                          include: {
+                              user: {
+                                  only: [:id, :first_name, :last_name]
+                              }
+                          }
+                      }
+                  }
+              }
+          }
+      )
+      if sync_token.present?
+        Hash.from_xml(events).as_json.merge!(sync_token: sync_token)
+      else
+        Hash.from_xml(events).as_json
+      end
+    else
+      {events: []}.as_json
+    end
   end
 end
 

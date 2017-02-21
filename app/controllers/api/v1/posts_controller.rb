@@ -21,6 +21,7 @@ class Api::V1::PostsController < Api::V1::ApiProtectedController
     common_api_response(resp_data, resp_status, resp_message, resp_errors, paging_data)
   end
   
+  # Call from app
   def discover
     # params = {
     #   "auth_token": "111111111",

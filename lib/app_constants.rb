@@ -21,4 +21,9 @@ module AppConstants
   INVITED  = 'invited'
   REGISTERED = 'registered'
   BOOKMARK  = 'bookmarked'
+  NEAR_ME   = 'near_me'
+  FOLLOWING = 'following'
+  HERE_NOW  = 'here_now'
+  GONE      = 'GONE'
+  ON_WAY    = 'on_way'
 end

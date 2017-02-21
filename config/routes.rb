@@ -55,6 +55,8 @@ Rails.application.routes.draw do
         collection do
           get 'event_list_horizontal'
           get 'event_posts'
+          get 'profile_events'
+          get 'event_guests'
           post 'event_register'
         end
       end

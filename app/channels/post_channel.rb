@@ -65,18 +65,13 @@ class PostChannel < ApplicationCable::Channel
     PostJob.perform_later response, current_user.id
   end
   
-  def trending_list(data)
-    response = Post.trending_list(data, current_user)
-    PostJob.perform_later response, current_user.id
-  end
+  # def trending_list(data)
+  #   response = Post.trending_list(data, current_user)
+  #   PostJob.perform_later response, current_user.id
+  # end
 
   def sync_akn(data)
     response = Post.sync_ack(data, current_user)
-  end
-  
-  def near_me_posts(data)
-    response = Post.near_me_posts(data, current_user)
-    PostJob.perform_later response, current_user.id
   end
   
   def post_comment(data)
