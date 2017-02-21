@@ -171,16 +171,16 @@ class Api::V1::EventsController < ApplicationController
   end
   
   def event_guests
-    params = {
-      "auth_token": "111111111",
-      "per_page":10,
-      "page":1,
-      "event_id": 13,
-      "type": "registered",
-      # "type": "registered/on_way/here_now/gone/",
-      # "filter_type": "male",
-      # "search_key": "faisal"
-    }
+    # params = {
+    #   "auth_token": "111111111",
+    #   "per_page":10,
+    #   "page":1,
+    #   "event_id": 13,
+    #   "type": "registered",
+    #   # "type": "registered/on_way/here_now/gone/",
+    #   # "filter_type": "male",
+    #   # "search_key": "faisal"
+    # }
     user_session = UserSession.find_by_auth_token(params[:auth_token])
     if user_session.present?
       response = Event.event_guests(params, user_session.user)
