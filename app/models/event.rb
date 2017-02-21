@@ -331,16 +331,25 @@ class Event < ApplicationRecord
       
       profile_ids     = event_members.pluck(:member_profile_id)
       member_profiles = MemberProfile.where(id: profile_ids)
+
+      if data[:search_key].present?
+        profile_ids = member_profiles.pluck(:id)
+        users = User.where(profile_id: profile_ids)
+        profile_ids = users.where('lower(first_name) like ? OR lower(last_name) like ? OR email like ? OR lower(username) like ? ', "%#{data[:search_key]}%".downcase, "%#{data[:search_key]}%".downcase, "%#{data[:search_key]}%".downcase, "%#{data[:search_key]}%".downcase).pluck(:profile_id)
+        member_profiles  = MemberProfile.where(id: profile_ids)
+      end
+      
       if data[:filter_type].present? &&  data[:filter_type]
         member_profiles = member_profiles.where(gender: data[:filter_type])
       end
+      
       member_profiles  =  member_profiles.page(page.to_i).per_page(per_page.to_i)
       paging_data      =  JsonBuilder.get_paging_data(page, per_page, member_profiles)
       member_profiles  =  member_profiles.as_json(
          only: [:id, :photo],
          include:{
              user: {
-                 only: [:id, :first_name, :last_name]
+                 only: [:id, :first_name, :last_name, :email]
              }
          }
       )

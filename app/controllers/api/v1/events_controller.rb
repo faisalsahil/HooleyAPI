@@ -180,7 +180,7 @@ class Api::V1::EventsController < ApplicationController
     #   "type": "registered",
     #   # "type": "registered/on_way/here_now/gone/",
     #   "filter_type": "male",
-    #   "search_key": "chuburij"
+    #   "search_key": "faisal"
     # }
     user_session = UserSession.find_by_auth_token(params[:auth_token])
     if user_session.present?
