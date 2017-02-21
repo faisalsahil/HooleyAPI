@@ -274,7 +274,6 @@ class Event < ApplicationRecord
           event_ids= EventMember.where(member_profile_id: member_profile.id).pluck(:event_id)
           events   = Event.where('member_profile_id = ? OR id IN(?)', member_profile.id, event_ids)
         else
-          #  Is my friend?
           event_ids= EventMember.where(member_profile_id: member_profile.id).pluck(:event_id)
           events   = Event.where('(member_profile_id = ? OR id IN(?)) AND is_public = ?', member_profile.id, event_ids, true)
         end
@@ -346,7 +345,7 @@ class Event < ApplicationRecord
       member_profiles  =  member_profiles.page(page.to_i).per_page(per_page.to_i)
       paging_data      =  JsonBuilder.get_paging_data(page, per_page, member_profiles)
       member_profiles  =  member_profiles.as_json(
-         only: [:id, :photo],
+         only: [:id, :photo, :contact_address, :dob],
          include:{
              user: {
                  only: [:id, :first_name, :last_name, :email]
@@ -368,6 +367,35 @@ class Event < ApplicationRecord
     resp_request_id = data[:request_id] if data[:request_id].present?
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
   end
+  
+  def self.event_attending_status(data, current_user)
+    begin
+      event_member = EventMember.find_by_member_profile_id_and_event_id(current_user.profile_id, data[:event_id])
+      if event_member.present?
+        event_member.on_the_way = data[:on_the_way] if data[:on_the_way].present?
+        event_member.reached    = data[:reached]    if data[:reached].present?
+        event_member.gone       = data[:gone]       if data[:gone].present?
+        event_member.save!
+        resp_data       = {}
+        resp_status     = 1
+        resp_message    = 'success'
+        resp_errors     = ''
+      else
+        resp_data       = {}
+        resp_status     = 0
+        resp_message    = 'error'
+        resp_errors     = 'You\'re not registered.'
+      end
+    rescue Exception => e
+      resp_data       = {}
+      resp_status     = 0
+      resp_message    = 'error'
+      resp_errors     = e
+    end
+    resp_request_id = ''
+    resp_request_id = data[:request_id] if data[:request_id].present?
+    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
+  end
 
   def self.events_response(events, current_user, sync_token=nil)
     if events.present?
@@ -375,6 +403,8 @@ class Event < ApplicationRecord
           only:[:id, :event_name, :member_profile_id, :location, :latitude, :longitude, :radius, :event_details, :is_friends_allowed, :is_public, :is_paid, :category_id, :event_type, :start_date, :end_date, :created_at, :updated_at, :custom_event, :message_from_host],
           :procs => Proc.new { |options, event|
             options[:builder].tag!('is_bookmarked', EventBookmark.is_bookmarked(event, current_user.profile_id))
+            options[:builder].tag!('is_registered', EventMember.is_registered(event, current_user.profile_id))
+            options[:builder].tag!('visiting_status', EventMember.visiting_status(event, current_user.profile_id))
           },
           include:{
               member_profile:{

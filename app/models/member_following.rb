@@ -129,13 +129,18 @@ class MemberFollowing < ApplicationRecord
       if member_following.present?
         member_following.is_deleted = true
         member_following.save!
-        resp_status = 1
+        frnd_member_following =  MemberFollowing.find_by_member_profile_id_and_following_profile_id(data[:member_following][:following_profile_id], current_user.profile_id)
+        if frnd_member_following.present?
+          frnd_member_following.is_deleted = true
+          frnd_member_following.save!
+        end
+        resp_status  = 1
         resp_message = 'Unfollow Successfull.'
-        resp_errors = ''
+        resp_errors  = ''
       else
-        resp_status = 0
+        resp_status  = 0
         resp_message = 'Errors'
-        resp_errors = 'No Follower Found.'
+        resp_errors  = 'No Follower Found.'
       end
       following_to_profile = MemberProfile.find_by_id(data[:member_following][:following_profile_id])
       resp_data    = {is_im_following: MemberProfile.is_following(following_to_profile, current_user)}
@@ -155,6 +160,13 @@ class MemberFollowing < ApplicationRecord
       member_following = MemberFollowing.find_by_id(data[:member_following][:id])
       member_following.following_status = data[:member_following][:following_status]
       member_following.save!
+      if member_following.following_status == AppConstants::ACCEPTED
+        new_following = MemberFollowing.new
+        new_following.member_profile_id    = member_following.following_profile_id
+        new_following.following_profile_id = member_following.member_profile_id
+        new_following.following_status     = member_following.following_status
+        new_following.save!
+      end
       resp_data     = {}
       resp_status   = 1
       resp_message  = 'Invitation' + ' '+ member_following.following_status

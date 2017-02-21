@@ -8,7 +8,7 @@ class Api::V1::EventsController < ApplicationController
     #     "page": 1,
     #     "per_page": 10,
     #     "list_type": 'day',
-    #     # "filter_type": 'invited/registered/bookmarked'
+    #     "filter_type": 'invited/registered/bookmarked'
     # }
     
     # params = {
@@ -71,7 +71,7 @@ class Api::V1::EventsController < ApplicationController
     #     "page": 1,
     #     "per_page": 10,
     #     "list_type": 'all',
-    #     "filter_type": 'invited/bookmarked'
+    #     "filter_type": 'registered'
     # }
     
     # params = {
@@ -185,6 +185,26 @@ class Api::V1::EventsController < ApplicationController
     user_session = UserSession.find_by_auth_token(params[:auth_token])
     if user_session.present?
       response = Event.event_guests(params, user_session.user)
+      render json: response
+    else
+      resp_data = {resp_data: {}, resp_status: 0, resp_message: 'Invalid Token', resp_error: 'error'}.as_json
+      return render json: resp_data
+    end
+  end
+  
+  def event_attending_status
+    # params = {
+    #   "auth_token": "111111111",
+    #   "per_page":10,
+    #   "page":1,
+    #   "event_id": 13,
+    #   "on_the_way": true,
+    #   "reached":    true,
+    #   "gone":       true
+    # }
+    user_session = UserSession.find_by_auth_token(params[:auth_token])
+    if user_session.present?
+      response = Event.event_attending_status(params, user_session.user)
       render json: response
     else
       resp_data = {resp_data: {}, resp_status: 0, resp_message: 'Invalid Token', resp_error: 'error'}.as_json

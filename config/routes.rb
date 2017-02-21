@@ -58,6 +58,7 @@ Rails.application.routes.draw do
           get 'profile_events'
           get 'event_guests'
           post 'event_register'
+          post 'event_attending_status'
         end
       end
       resources :event_webs, only:[:index, :show, :destroy]
