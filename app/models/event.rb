@@ -348,15 +348,22 @@ class Event < ApplicationRecord
       
       member_profiles  =  member_profiles.page(page.to_i).per_page(per_page.to_i)
       paging_data      =  JsonBuilder.get_paging_data(page, per_page, member_profiles)
-      member_profiles  =  member_profiles.as_json(
-         only: [:id, :photo, :contact_address, :dob],
-         include:{
-             user: {
-                 only: [:id, :first_name, :last_name, :email]
-             }
-         }
-      )
-      resp_data       = {member_profiles: member_profiles}.as_json
+      if member_profiles.present?
+        member_profiles  =  member_profiles.to_xml(
+           only: [:id, :photo, :contact_address, :dob],
+           :procs => Proc.new { |options, member_profile|
+             options[:builder].tag!('is_friend',   MemberFollowing.is_friend(member_profile, current_user.profile_id))
+           },
+           include:{
+               user: {
+                   only: [:id, :first_name, :last_name, :email]
+               }
+           }
+        )
+        resp_data  =  Hash.from_xml(member_profiles).as_json
+      else
+        resp_data  = {member_profiles: []}.as_json
+      end
       resp_status     = 1
       resp_message    = 'success'
       resp_errors     = ''

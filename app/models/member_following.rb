@@ -3,6 +3,15 @@ class MemberFollowing < ApplicationRecord
   belongs_to :member_profile
   @@limit = 10
   
+  def self.is_friend(member_profile, profile_id)
+    member_following = MemberFollowing.where(member_profile_id: profile_id, following_profile_id: member_profile.id, following_status: AppConstants::ACCEPTED, is_deleted: false)
+    if member_following.present?
+      true
+    else
+      false
+    end
+  end
+  
   def self.get_followers(data, current_user)
     begin
       data = data.with_indifferent_access

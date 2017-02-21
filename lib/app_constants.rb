@@ -24,6 +24,6 @@ module AppConstants
   NEAR_ME   = 'near_me'
   FOLLOWING = 'following'
   HERE_NOW  = 'here_now'
-  GONE      = 'GONE'
+  GONE      = 'gone'
   ON_WAY    = 'on_way'
 end
