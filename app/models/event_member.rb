@@ -17,7 +17,7 @@ class EventMember < ApplicationRecord
     if event_member.present?
       event_member.visiting_status
     else
-      "Not invited"
+      "not_invited"
     end
   end
 end

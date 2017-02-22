@@ -199,8 +199,6 @@ class Api::V1::EventsController < ApplicationController
     #   "per_page":10,
     #   "page":1,
     #   "event_id": 13,
-    #   "on_the_way": true,
-    #   "reached":    true,
     #   "visiting_status": "on_the_way/reached/gone"
     # }
     user_session = UserSession.find_by_auth_token(params[:auth_token])
