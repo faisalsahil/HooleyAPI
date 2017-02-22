@@ -235,18 +235,18 @@ class Event < ApplicationRecord
       member_profile = current_user.profile
       event          = Event.find_by_id(data[:event_id])
       if event.present?
-        
+        posts   = event.posts
         if data[:type].present? && data[:type] ==  AppConstants::ME_MEDIA
-          posts = event.posts.where(member_profile_id: current_user.profile_id)
+          posts = posts.where(member_profile_id: current_user.profile_id)
         end
         
         if data[:type].present? && data[:type] ==  AppConstants::FRIENDS
           profile_ids =  member_profile.member_followings.where(following_status: AppConstants::ACCEPTED, is_deleted:false).pluck(:following_profile_id)
-          posts       = event.posts.where(member_profile_id: profile_ids)
+          posts       = posts.where(member_profile_id: profile_ids)
         end
 
         if data[:type].present? && data[:type] ==  AppConstants::LIKED
-          posts = event.posts.order('post_likes_count DESC')
+          posts = posts.order('post_likes_count DESC')
         end
 
         if data[:type].present? && data[:type] ==  AppConstants::ALL
