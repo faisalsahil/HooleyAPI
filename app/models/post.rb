@@ -511,76 +511,80 @@ class Post < ApplicationRecord
   end
 
   def self.posts_array_response(post_array, profile, sync_token=nil)
-    posts = post_array.to_xml(
-        only: [:id, :post_title, :event_id, :post_description, :datetime, :is_post_public, :is_deleted, :created_at, :updated_at, :post_type, :location, :latitude, :longitude],
-        methods: [:likes_count, :comments_count],
-        :procs => Proc.new { |options, post|
-          options[:builder].tag!('liked_by_me', PostLike.liked_by_me(post, profile.id))
-        },
-        include: {
-            member_profile: {
-                only: [:id, :photo, :country_id, :is_profile_public, :gender],
-                include: {
-                    user: {
-                        only: [:id, :first_name, :last_name]
-                    }
-                }
-            },
-            event:{
-                only:[:id, :event_name]
-            },
-            recent_post_likes: {
-                only: [:id, :created_at, :updated_at],
-                include: {
-                    member_profile: {
-                        only: [:id, :photo],
-                        include: {
-                            user: {
-                                only: [:id, :first_name, :last_name]
-                            }
-                        }
-                    }
-                }
-            },
-            recent_post_comments: {
-                only: [:id, :post_comment],
-                methods:[:is_co_host_or_host],
-                include: {
-                    member_profile: {
-                        only: [:id, :photo],
-                        include: {
-                            user: {
-                                only: [:id, :first_name, :last_name],
-                            }
-                        }
-                    }
-                }
-            },
-            post_attachments: {
-                only: [:id, :attachment_url, :thumbnail_url, :created_at, :updated_at, :attachment_type],
-                include:{
-                    post_photo_users:{
-                        only:[:id, :x_coordinate, :y_coordinate, :member_profile_id, :post_attachment_id],
-                        include: {
-                            member_profile: {
-                                only: [:id],
-                                include: {
-                                    user: {
-                                        only: [:id, :first_name, :last_name]
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    )
-    
-    if sync_token.present?
-      Hash.from_xml(posts).as_json.merge!(sync_token: sync_token)
+    if post_array.present?
+      posts = post_array.to_xml(
+          only: [:id, :post_title, :event_id, :post_description, :datetime, :is_post_public, :is_deleted, :created_at, :updated_at, :post_type, :location, :latitude, :longitude],
+          methods: [:likes_count, :comments_count],
+          :procs => Proc.new { |options, post|
+            options[:builder].tag!('liked_by_me', PostLike.liked_by_me(post, profile.id))
+          },
+          include: {
+              member_profile: {
+                  only: [:id, :photo, :country_id, :is_profile_public, :gender],
+                  include: {
+                      user: {
+                          only: [:id, :first_name, :last_name]
+                      }
+                  }
+              },
+              event:{
+                  only:[:id, :event_name]
+              },
+              recent_post_likes: {
+                  only: [:id, :created_at, :updated_at],
+                  include: {
+                      member_profile: {
+                          only: [:id, :photo],
+                          include: {
+                              user: {
+                                  only: [:id, :first_name, :last_name]
+                              }
+                          }
+                      }
+                  }
+              },
+              recent_post_comments: {
+                  only: [:id, :post_comment],
+                  methods:[:is_co_host_or_host],
+                  include: {
+                      member_profile: {
+                          only: [:id, :photo],
+                          include: {
+                              user: {
+                                  only: [:id, :first_name, :last_name],
+                              }
+                          }
+                      }
+                  }
+              },
+              post_attachments: {
+                  only: [:id, :attachment_url, :thumbnail_url, :created_at, :updated_at, :attachment_type],
+                  include:{
+                      post_photo_users:{
+                          only:[:id, :x_coordinate, :y_coordinate, :member_profile_id, :post_attachment_id],
+                          include: {
+                              member_profile: {
+                                  only: [:id],
+                                  include: {
+                                      user: {
+                                          only: [:id, :first_name, :last_name]
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  }
+              }
+          }
+      )
+      
+      if sync_token.present?
+        Hash.from_xml(posts).as_json.merge!(sync_token: sync_token)
+      else
+        Hash.from_xml(posts).as_json
+      end
     else
-      Hash.from_xml(posts).as_json
+      {posts: []}.as_json
     end
   end
 

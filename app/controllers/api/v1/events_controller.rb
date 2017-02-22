@@ -103,10 +103,12 @@ class Api::V1::EventsController < ApplicationController
   def event_posts
     # params = {
     #   "auth_token": "111111111",
-    #   "event_id": 13,
     #   "per_page":10,
     #   "page":1,
-    #   "filter_type": "photo"
+    #   "event_id": 13,
+    #   "type": "my_media",
+    #   # "type": "my_media/friends/liked/all",
+    #   # "filter_type": "video/photo"
     # }
     user_session = UserSession.find_by_auth_token(params[:auth_token])
     if user_session.present?
@@ -199,7 +201,7 @@ class Api::V1::EventsController < ApplicationController
     #   "event_id": 13,
     #   "on_the_way": true,
     #   "reached":    true,
-    #   "gone":       true
+    #   "visiting_status": "on_the_way/reached/gone"
     # }
     user_session = UserSession.find_by_auth_token(params[:auth_token])
     if user_session.present?

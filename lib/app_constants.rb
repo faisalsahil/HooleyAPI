@@ -26,4 +26,7 @@ module AppConstants
   HERE_NOW  = 'here_now'
   GONE      = 'gone'
   ON_WAY    = 'on_way'
+  ME_MEDIA  = 'my_media'
+  FRIENDS   = 'friends'
+  LIKED     = 'liked'
 end

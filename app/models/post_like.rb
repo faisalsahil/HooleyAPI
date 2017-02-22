@@ -1,7 +1,7 @@
 class PostLike < ApplicationRecord
   include JsonBuilder
 
-  belongs_to :post
+  belongs_to :post, :counter_cache => true
   belongs_to :member_profile
   
   validates_uniqueness_of :post_id, scope: :member_profile_id
@@ -133,9 +133,7 @@ class PostLike < ApplicationRecord
       response          = JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
     end
   end
-
   
-
   def self.post_likes_response(post_likes_array)
     post_likes =  post_likes_array.as_json(
         only:    [:id, :post_id, :like_status, :created_at, :updated_at],

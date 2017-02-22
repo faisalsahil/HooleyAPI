@@ -232,20 +232,34 @@ class Event < ApplicationRecord
     begin
       per_page = (data[:per_page] || @@limit).to_i
       page     = (data[:page] || 1).to_i
-      event    = Event.find_by_id(data[:event_id])
+      member_profile = current_user.profile
+      event          = Event.find_by_id(data[:event_id])
       if event.present?
-        if data[:filter_type].present?
-          posts = event.posts.joins(:post_attachments).where(post_attachments: {attachment_type: data[:filter_type]})
-        else
-          posts = event.posts
+        
+        if data[:type].present? && data[:type] ==  AppConstants::ME_MEDIA
+          posts = event.posts.where(member_profile_id: current_user.profile_id)
         end
+        
+        if data[:type].present? && data[:type] ==  AppConstants::FRIENDS
+          profile_ids =  member_profile.member_followings.where(following_status: AppConstants::ACCEPTED, is_deleted:false).pluck(:following_profile_id)
+          posts       = event.posts.where(member_profile_id: profile_ids)
+        end
+
+        if data[:type].present? && data[:type] ==  AppConstants::LIKED
+          posts = event.posts.order('post_likes_count DESC')
+        end
+
+        if data[:type].present? && data[:type] ==  AppConstants::ALL
+          posts  =  event.posts
+        end
+        
+        if data[:filter_type].present?
+          posts = posts.joins(:post_attachments).where(post_attachments: {attachment_type: data[:filter_type]})
+        end
+        
         posts           =  posts.page(page.to_i).per_page(per_page.to_i)
         paging_data     =  JsonBuilder.get_paging_data(page, per_page, posts)
-        if posts.present?
-          resp_data       =  Post.posts_array_response(posts, current_user.profile)
-        else
-          resp_data     = {posts: []}.as_json
-        end
+        resp_data       =  Post.posts_array_response(posts, current_user.profile)
         resp_status     = 1
         resp_message    = 'success'
         resp_errors     = ''
@@ -275,8 +289,9 @@ class Event < ApplicationRecord
       member_profile = MemberProfile.find_by_id(data[:member_profile_id])
       if member_profile.present?
         if member_profile.id == current_user.profile_id
-          event_ids= EventMember.where(member_profile_id: member_profile.id).pluck(:event_id)
-          events   = Event.where('member_profile_id = ? OR id IN(?)', member_profile.id, event_ids)
+          # event_ids= EventMember.where(member_profile_id: member_profile.id).pluck(:event_id)
+          # events   = Event.where('member_profile_id = ? OR id IN(?)', member_profile.id, event_ids)
+          events = member_profile.events
         else
           event_ids= EventMember.where(member_profile_id: member_profile.id).pluck(:event_id)
           events   = Event.where('(member_profile_id = ? OR id IN(?)) AND is_public = ?', member_profile.id, event_ids, true)
@@ -383,14 +398,19 @@ class Event < ApplicationRecord
     begin
       event_member = EventMember.find_by_member_profile_id_and_event_id(current_user.profile_id, data[:event_id])
       if event_member.present?
-        event_member.on_the_way = data[:on_the_way] if data[:on_the_way].present?
-        event_member.reached    = data[:reached]    if data[:reached].present?
-        event_member.gone       = data[:gone]       if data[:gone].present?
-        event_member.save!
-        resp_data       = {}
-        resp_status     = 1
-        resp_message    = 'success'
-        resp_errors     = ''
+        if data[:visiting_status] == 'on_the_way' || data[:visiting_status] == 'reached' || data[:visiting_status] == 'gone'
+          event_member.visiting_status = data[:visiting_status]
+          event_member.save!
+          resp_data       = {}
+          resp_status     = 1
+          resp_message    = 'success'
+          resp_errors     = ''
+        else
+          resp_data       = {}
+          resp_status     = 0
+          resp_message    = 'error'
+          resp_errors     = 'Visiting Status is not correct.'
+        end
       else
         resp_data       = {}
         resp_status     = 0
