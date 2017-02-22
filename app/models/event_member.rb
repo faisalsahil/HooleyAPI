@@ -3,6 +3,8 @@ class EventMember < ApplicationRecord
   belongs_to :event
   belongs_to :member_profile
 
+  # validates_uniqueness_of :event_id, scope: :member_profile_id
+
   def self.is_registered(event, profile_id)
     event_member = EventMember.where(member_profile_id: profile_id, event_id: event.id).try(:first)
     if event_member.present? && event_member.invitation_status == AppConstants::REGISTERED

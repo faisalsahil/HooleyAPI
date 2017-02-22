@@ -233,12 +233,7 @@ class Api::V1::EventsController < ApplicationController
     # }
     user_session = UserSession.find_by_auth_token(params[:auth_token])
     if user_session.present?
-      event = Event.find_by_id(params[:event][:id])
-      if event.present? && event.update_attributes(params[:event])
-        response = {resp_data: {}, resp_status: 1, resp_message: 'success', resp_error: ''}.as_json
-      else
-        response = {resp_data: {}, resp_status: 0, resp_message: 'error', resp_error: 'Members not added'}.as_json
-      end
+      response = Event.event_add_members(params, user_session.user)
       render json: response
     else
       resp_data = {resp_data: {}, resp_status: 0, resp_message: 'Invalid Token', resp_error: 'error'}.as_json

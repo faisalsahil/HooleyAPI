@@ -14,7 +14,7 @@ class Event < ApplicationRecord
   has_many   :event_bookmarks,   dependent: :destroy
   has_many   :synchronizations, as: :media
   has_many   :posts
-
+  
   validates_presence_of :event_name, :start_date, :end_date, :location, :longitude, :latitude, :category_id
   accepts_nested_attributes_for :event_members, :event_co_hosts, :event_attachments, :hashtags
   
@@ -417,6 +417,32 @@ class Event < ApplicationRecord
         resp_message    = 'error'
         resp_errors     = 'You\'re not registered.'
       end
+    rescue Exception => e
+      resp_data       = {}
+      resp_status     = 0
+      resp_message    = 'error'
+      resp_errors     = e
+    end
+    resp_request_id = ''
+    resp_request_id = data[:request_id] if data[:request_id].present?
+    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
+  end
+  
+  def self.event_add_members(data, current_user)
+    begin
+      event = Event.find_by_id(data[:event][:id])
+      event_members = data[:event][:event_members_attributes]
+      event_members.each do |member|
+        event_member = EventMember.find_by_member_profile_id_and_event_id(member[:member_profile_id], event.id) || event.event_members.build
+        if event_member.new_record?
+          event_member.member_profile_id = member[:member_profile_id]
+          event_member.save
+        end
+      end
+      resp_data       = {}
+      resp_status     = 1
+      resp_message    = 'success'
+      resp_errors     = ''
     rescue Exception => e
       resp_data       = {}
       resp_status     = 0
