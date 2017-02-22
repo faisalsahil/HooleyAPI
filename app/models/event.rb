@@ -336,15 +336,15 @@ class Event < ApplicationRecord
       end
 
       if data[:type].present? &&  data[:type] ==  AppConstants::ON_WAY
-        event_members  = event_members.where(invitation_status: AppConstants::REGISTERED, on_the_way: true)
+        event_members  = event_members.where(visiting_status: AppConstants::ON_WAY)
       end
       
-      if data[:type].present? &&  data[:type] ==  AppConstants::HERE_NOW
-        event_members  = event_members.where(invitation_status: AppConstants::REGISTERED, reached: true)
+      if data[:type].present? &&  data[:type] ==  AppConstants::REACHED
+        event_members  = event_members.where(visiting_status: AppConstants::REACHED)
       end
 
       if data[:type].present? &&  data[:type] ==  AppConstants::GONE
-        event_members  = event_members.where(invitation_status: AppConstants::REGISTERED, gone: true)
+        event_members  = event_members.where(visiting_status: AppConstants::GONE)
       end
       
       profile_ids     = event_members.pluck(:member_profile_id)
