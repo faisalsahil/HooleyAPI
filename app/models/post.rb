@@ -87,8 +87,8 @@ class Post < ApplicationRecord
                     }
                 }
             },
-            recent_post_comments: {
-                only: [:id, :post_comment],
+            recent_comments: {
+                only: [:id, :comment],
                 methods:[:is_co_host_or_host],
                 include: {
                     member_profile: {
