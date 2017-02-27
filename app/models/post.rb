@@ -455,10 +455,10 @@ class Post < ApplicationRecord
           latitude:       post.latitude,
           longitude:      post.longitude,
           likes_count:    post.post_likes.count,
-          comments_count: post.post_comments.count,
+          comments_count: post.comments.count,
           post_members_counts: post.post_members.count,
           liked_by_me: PostLike.liked_by_me(post, current_user.profile_id),
-          count: post.post_likes.where(like_status: true, is_deleted: false).count + post.post_comments.where(is_deleted: false).count,
+          count: post.post_likes.where(like_status: true, is_deleted: false).count + post.comments.where(is_deleted: false).count,
           member_profile: {
               id:     member_profile.id,
               photo:  member_profile.photo,
@@ -545,8 +545,8 @@ class Post < ApplicationRecord
                       }
                   }
               },
-              recent_post_comments: {
-                  only: [:id, :post_comment],
+              recent_comments: {
+                  only: [:id, :comment],
                   methods:[:is_co_host_or_host],
                   include: {
                       member_profile: {
@@ -643,8 +643,8 @@ class Post < ApplicationRecord
                     }
                 }
             },
-            recent_post_comments: {
-                only: [:id, :post_comment],
+            recent_comments: {
+                only: [:id, :comment],
                 methods:[:is_co_host_or_host],
                 include: {
                     member_profile: {
