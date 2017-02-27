@@ -1,0 +1,2 @@
+class ConversationMember < ApplicationRecord
+end

@@ -6,6 +6,7 @@ class Event < ApplicationRecord
   
   belongs_to :member_profile
   belongs_to :category
+  has_one    :conversation, as: :group_chat, dependent: :destroy
   has_many   :event_attachments, dependent: :destroy
   has_many   :event_co_hosts,    dependent: :destroy
   has_many   :event_hash_tags,   dependent: :destroy
@@ -42,6 +43,7 @@ class Event < ApplicationRecord
       profile = current_user.profile
       event   = profile.events.build(data[:event])
       if event.save
+        # creating hashtags for event
         data[:hash_tags] && data[:hash_tags].each do |tag|
           hash_tag = Hashtag.find_by_name(tag[:tag_name])
           if hash_tag.present?
@@ -57,10 +59,13 @@ class Event < ApplicationRecord
             event_hash_tag.save
           end
         end
+        # creating event members
         event.event_members.each do |member|
           member.is_invited = true
           member.save
         end
+        # create conversation for event here
+        conversation    = create_event_conversation(event, data, current_user)
         sync_event_id   = event.id
         resp_data       = {}
         resp_status     = 1
@@ -82,6 +87,19 @@ class Event < ApplicationRecord
     resp_request_id = data[:request_id]
     response = JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
     [response, sync_event_id]
+  end
+  
+  def self.create_event_conversation(event, data, current_user)
+    count = 1
+    conversation = event.build_conversation
+    conversation.conversation_members.build(user_id: current_user.id, is_conversation_admin: true)
+    members = data[:event][:event_members_attributes]
+    members && members.each do |member|
+      conversation.conversation_members.build(user_id: member[:member_profile_id])
+      count  = count + 1
+    end
+    conversation.conversation_members_count =  count
+    conversation.save!
   end
 
   def self.show_event(data, current_user)
@@ -506,6 +524,9 @@ class Event < ApplicationRecord
                           }
                       }
                   }
+              },
+              conversation:{
+                  only: [:id]
               }
           }
       )
