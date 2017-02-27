@@ -71,7 +71,7 @@ class Api::V1::EventsController < ApplicationController
     #     "page": 1,
     #     "per_page": 10,
     #     "list_type": 'all',
-    #     "filter_type": 'registered'
+    #     # "filter_type": 'registered'
     # }
     
     # params = {

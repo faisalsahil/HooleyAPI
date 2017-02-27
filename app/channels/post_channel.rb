@@ -4,10 +4,10 @@ class PostChannel < ApplicationCable::Channel
   def subscribed
     if params[:post_id].present?
       stream_from "post_#{params[:post_id]}"
-      sync_comments(current_user, params[:post_id], 'Post')
+      sync_comments(current_user, params[:post_id], params[:session_id],'Post')
     elsif params[:event_id].present?
       stream_from "event_#{params[:event_id]}"
-      sync_comments(current_user, params[:event_id], 'Event')
+      sync_comments(current_user, params[:event_id], params[:session_id], 'Event')
     elsif current_user.present?
       stream_from "post_channel_#{current_user.id}"
       newly_created_posts(current_user)
@@ -28,10 +28,16 @@ class PostChannel < ApplicationCable::Channel
     PostJob.perform_later response, current_user.id if response.present?
   end
 
-  def sync_comments(current_user, object_id, type)
+  def sync_comments(current_user, object_id, session_id, type)
     if type == 'Post'
+      params = {user_id: current_user.id, media_id: object_id, media_type: 'Post', session_id: session_id}
+      open_session = OpenSession.find_by_user_id_and_media_id_and_media_type(current_user.id, object_id, 'Post') || OpenSession.new(params)
+      open_session.save if open_session.new_record?
       data  = { post: { id: object_id } }
     else
+      params = {user_id: current_user.id, media_id: object_id, media_type: 'Event', session_id: session_id}
+      open_session = OpenSession.find_by_user_id_and_media_id_and_media_type(current_user.id, object_id, 'Event') || OpenSession.new(params)
+      open_session.save if open_session.new_record?
       data  = { event: { id: object_id } }
     end
     response = Comment.comments_list(data, current_user, true)
