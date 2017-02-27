@@ -4,7 +4,10 @@ class PostChannel < ApplicationCable::Channel
   def subscribed
     if params[:post_id].present?
       stream_from "post_#{params[:post_id]}"
-      sync_created_comments(current_user, params[:post_id])
+      sync_comments(current_user, params[:post_id], 'Post')
+    elsif params[:event_id].present?
+      stream_from "event_#{params[:event_id]}"
+      sync_comments(current_user, params[:event_id], 'Event')
     elsif current_user.present?
       stream_from "post_channel_#{current_user.id}"
       newly_created_posts(current_user)
@@ -25,15 +28,13 @@ class PostChannel < ApplicationCable::Channel
     PostJob.perform_later response, current_user.id if response.present?
   end
 
-  def sync_created_comments(current_user, post_id)
-    data     = { post: { id: post_id } }
-    response = PostComment.post_comments_list(data, current_user, true)
-    PostJob.perform_later response, current_user.id
-  end
-
-  def sync_post_likes(current_user, post_id)
-    data     = { post: { id: post_id } }
-    response = PostLike.post_likes_list(data, current_user, true)
+  def sync_comments(current_user, object_id, type)
+    if type == 'Post'
+      data  = { post: { id: object_id } }
+    else
+      data  = { event: { id: object_id } }
+    end
+    response = Comment.comments_list(data, current_user, true)
     PostJob.perform_later response, current_user.id
   end
 
@@ -64,28 +65,27 @@ class PostChannel < ApplicationCable::Channel
     response = Post.post_list(data, current_user)
     PostJob.perform_later response, current_user.id
   end
-  
-  # def trending_list(data)
-  #   response = Post.trending_list(data, current_user)
-  #   PostJob.perform_later response, current_user.id
-  # end
 
   def sync_akn(data)
     response = Post.sync_ack(data, current_user)
   end
-  
-  def post_comment(data)
-    response, broadcast_response = PostComment.post_comment(data, current_user)
+
+  def comment(data)
+    response, broadcast_response = Comment.comment(data, current_user)
     PostJob.perform_later response, current_user.id
     if broadcast_response.present?
       json_obj = JSON.parse(response)
-      post_id  = json_obj['data']['post_comments'][0]['post_id']
-      PostJob.perform_later broadcast_response, '', post_id
+      id  = json_obj['data']['comments'][0]['commentable_id']
+      if json_obj['data']['comments'][0]['commentable_type'] == 'Post'
+        PostJob.perform_later broadcast_response, '', id
+      else
+        EventJob.perform_later broadcast_response, id
+      end
     end
   end
 
-  def post_comments_list(data)
-    response = PostComment.post_comments_list(data, current_user)
+  def comments_list(data)
+    response = Comment.comments_list(data, current_user)
     PostJob.perform_later response, current_user.id
   end
 
@@ -95,11 +95,6 @@ class PostChannel < ApplicationCable::Channel
     json_obj = JSON.parse(response)
     post_id  = json_obj["data"]["post_like"]["post"]["id"]
     PostJob.perform_later resp_broadcast, '', post_id
-  end
-  
-  def event_list(data)
-    response = Event.event_list(data, current_user)
-    PostJob.perform_later response, current_user.id
   end
   
   

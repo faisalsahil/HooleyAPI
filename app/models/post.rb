@@ -5,16 +5,16 @@ class Post < ApplicationRecord
 
   belongs_to :member_profile
   belongs_to :event
-  has_many   :post_videos,        dependent: :destroy
-  has_many   :post_members,       dependent: :destroy
-  has_many   :post_likes,         dependent: :destroy
-  has_many   :post_comments,      dependent: :destroy
-  has_many   :recent_post_comments, -> { order(created_at: :desc).limit(10) }, class_name: 'PostComment'
+  has_one    :user,      as: :profile
+  has_many   :post_members,                dependent: :destroy
+  has_many   :post_likes,                  dependent: :destroy
+  has_many   :comments,  as: :commentable, dependent: :destroy
+  has_many   :recent_comments, -> { order(created_at: :desc).limit(10) }, class_name: 'Comment'
   has_many   :recent_post_likes,    -> { order(created_at: :desc).limit(10) }, class_name: 'PostLike'
   has_many   :post_users,         dependent: :destroy
   has_many   :post_attachments,   dependent: :destroy
 
-  accepts_nested_attributes_for :post_videos, :post_attachments, :post_members, :post_users
+  accepts_nested_attributes_for  :post_attachments, :post_members, :post_users
 
   acts_as_mappable default_units: :kms, lat_column_name: :latitude, lng_column_name: :longitude
 
@@ -115,11 +115,13 @@ class Post < ApplicationRecord
   end
 
   def comments_count
-    self.post_comments.where(is_deleted: false).count
+    # self.post_comments.where(is_deleted: false).count
+    self.comments.where(is_deleted: false).count
   end
 
   def count
-    self.post_likes.where(like_status: true, is_deleted: false) + self.post_comments.where(is_deleted: false).count
+    # self.post_likes.where(like_status: true, is_deleted: false) + self.post_comments.where(is_deleted: false).count
+    self.post_likes.where(like_status: true, is_deleted: false) + self.comments.where(is_deleted: false).count
   end
 
   def liked_by_me

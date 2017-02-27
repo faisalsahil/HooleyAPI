@@ -26,7 +26,7 @@ class PostLike < ApplicationRecord
       if post_like.save
         resp_data     = post_like_live(post_like)
         post_comments = []
-        resp_broadcast_data  = PostComment.posts_comments_response(post_comments, current_user, post)
+        resp_broadcast_data  = Comment.comments_response(post_comments, current_user, post)
         resp_status          = 1
         resp_errors          = ''
         data[:post][:is_like] == true || data[:post][:is_like] == 1 ? resp_message = 'liked Successfully' : resp_message = 'disliked Successfully'
