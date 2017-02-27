@@ -9,7 +9,7 @@ class Post < ApplicationRecord
   has_many   :post_members,                dependent: :destroy
   has_many   :post_likes,                  dependent: :destroy
   has_many   :comments,  as: :commentable, dependent: :destroy
-  has_many   :recent_comments, -> { order(created_at: :desc).limit(10) }, class_name: 'Comment'
+  has_many   :recent_comments, -> { order(created_at: :desc).limit(10) }, class_name: 'Comment', as: :commentable
   has_many   :recent_post_likes,    -> { order(created_at: :desc).limit(10) }, class_name: 'PostLike'
   has_many   :post_users,         dependent: :destroy
   has_many   :post_attachments,   dependent: :destroy
@@ -134,7 +134,7 @@ class Post < ApplicationRecord
   end
   
   def self.post_create(data, current_user)
-    begin
+    # begin
       data    = data.with_indifferent_access
       profile = current_user.profile
       post = profile.posts.build(data[:post])
@@ -149,13 +149,13 @@ class Post < ApplicationRecord
         resp_message    = 'Errors'
         resp_errors     = post.errors.messages
       end
-    rescue Exception => e
-      resp_data       = ''
-      resp_status     = 0
-      paging_data     = ''
-      resp_message    = 'error'
-      resp_errors     = e
-    end
+    # rescue Exception => e
+    #   resp_data       = ''
+    #   resp_status     = 0
+    #   paging_data     = ''
+    #   resp_message    = 'error'
+    #   resp_errors     = e
+    # end
     resp_request_id = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
   end
@@ -309,7 +309,7 @@ class Post < ApplicationRecord
   end
 
   def self.newly_created_posts(current_user)
-    begin
+    # begin
       last_subs_date = current_user.last_subscription_time
       profile        = current_user.profile
       
@@ -369,14 +369,14 @@ class Post < ApplicationRecord
         resp_errors     = ''
         JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
       end
-    rescue Exception => e
-      resp_data       = ''
-      resp_status     = 0
-      paging_data     = ''
-      resp_message    = 'error'
-      resp_errors     = e
-      JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
-    end
+    # rescue Exception => e
+    #   resp_data       = ''
+    #   resp_status     = 0
+    #   paging_data     = ''
+    #   resp_message    = 'error'
+    #   resp_errors     = e
+    #   JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
+    # end
   end
 
   def self.trending_list(data, current_user)
