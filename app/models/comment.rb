@@ -195,8 +195,8 @@ class Comment < ApplicationRecord
         resp_message    = 'Comments List'
         resp_errors     = ''
       else
-        resp_data       = ''
-        resp_status     = 0
+        resp_data       = {}
+        resp_status     = 1
         resp_message    = 'Errors'
         resp_errors     = 'No comments found'
       end
@@ -208,7 +208,7 @@ class Comment < ApplicationRecord
         JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, next_page_exist: next_page_exist, previous_page_exist: previous_page_exist, post_list: true)
       end
     rescue Exception => e
-      resp_data       = ''
+      resp_data       = {}
       resp_status     = 0
       paging_data     = ''
       resp_message    = 'error'
