@@ -63,7 +63,11 @@ class User < ApplicationRecord
         user.synced_datetime        = nil
         user.last_subscription_time = nil
         user.save!
-
+        # destroy open sessions of post/event
+        open_sessions = OpenSession.where(user_id: user.id)
+        open_sessions.destroy_all if open_sessions.present?
+        # ==============
+        
         if user.profile_type == ADMIN
           resp_data = user.profile.admin_profile(user_session.auth_token)
         else

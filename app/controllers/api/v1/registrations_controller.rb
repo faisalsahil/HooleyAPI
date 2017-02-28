@@ -36,9 +36,9 @@ class Api::V1::RegistrationsController < ApplicationController
     #         gender: "male",
     #         dob: "12/04/1981",
     #         user_attributes: {
-    #             email: "omer1@gmail.com",
-    #             first_name: "Faisal",
-    #             last_name: "CH",
+    #             email: "test3@gmail.com",
+    #             first_name: "Test3",
+    #             last_name: "Testing",
     #             password: "test123456",
     #             password_confirmation: "test123456"
     #         }

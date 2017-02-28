@@ -46,12 +46,10 @@ class Comment < ApplicationRecord
         resp_message    = 'Comment Successfully Posted'
         resp_errors     = ''
         response        = JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
-      
-        resp_message       = 'New Comment Posted'
-        resp_request_id    = ''
-        broadcast_response = JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, type: "Sync")
+        
+        broadcast_response = resp_data
       else
-        resp_data       = []
+        resp_data       = {}
         resp_request_id = data[:request_id]
         resp_status     = 0
         resp_message    = 'Errors'
@@ -61,7 +59,7 @@ class Comment < ApplicationRecord
       end
       [response, broadcast_response]
     rescue Exception => e
-      resp_data       = ''
+      resp_data       = {}
       resp_status     = 0
       resp_message    = 'error'
       resp_errors     = e
@@ -210,6 +208,37 @@ class Comment < ApplicationRecord
       resp_data       = ''
       resp_status     = 0
       paging_data     = ''
+      resp_message    = 'error'
+      resp_errors     = e
+      resp_request_id = data[:request_id]
+      JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
+    end
+  end
+  
+  def self.broadcast_comment(response, object_id, object_type)
+    begin
+      resp_message    = 'New Comment Posted'
+      resp_request_id = ''
+      resp_status     = 1
+      resp_errors     = ''
+      if object_type == AppConstants::POST
+        open_sessions = OpenSession.where(media_id: object_id, media_type: AppConstants::POST)
+        open_sessions.each do |open_session|
+          broadcast_response = response.merge!(session_id: open_session.session_id)
+          broadcast_response = JsonBuilder.json_builder(broadcast_response, resp_status, resp_message, resp_request_id, errors: resp_errors, type: "Sync")
+          PostJob.perform_later broadcast_response, open_session.user_id
+        end
+      else
+        open_sessions = OpenSession.where(media_id: object_id, media_type: AppConstants::EVENT)
+        open_sessions.each do |open_session|
+          broadcast_response = response.merge!(session_id: open_session.session_id)
+          broadcast_response = JsonBuilder.json_builder(broadcast_response, resp_status, resp_message, resp_request_id, errors: resp_errors, type: "Sync")
+          EventJob.perform_later broadcast_response, open_session.user_id
+        end
+      end
+    rescue Exception => e
+      resp_data       = {}
+      resp_status     = 0
       resp_message    = 'error'
       resp_errors     = e
       resp_request_id = data[:request_id]

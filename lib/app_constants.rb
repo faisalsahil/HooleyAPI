@@ -29,4 +29,6 @@ module AppConstants
   ME_MEDIA  = 'my_media'
   FRIENDS   = 'friends'
   LIKED     = 'liked'
+  POST      = 'Post'
+  EVENT     = 'Event'
 end

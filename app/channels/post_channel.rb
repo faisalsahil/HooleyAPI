@@ -20,6 +20,13 @@ class PostChannel < ApplicationCable::Channel
   def unsubscribed
     current_user.last_subscription_time = Time.now
     current_user.save!
+    if params[:post_id].present?
+      open_sessions = OpenSession.where(user_id: current_user.id, media_id: params[:post_id], media_type: AppConstants::POST)
+      open_sessions.destroy_all if open_sessions.present?
+    elsif params[:event_id].present?
+      open_sessions = OpenSession.where(user_id: current_user.id, media_id: params[:event_id], media_type: AppConstants::EVENT)
+      open_sessions.destroy_all if open_sessions.present?
+    end
     stop_all_streams
   end
 
@@ -29,14 +36,14 @@ class PostChannel < ApplicationCable::Channel
   end
 
   def sync_comments(current_user, object_id, session_id, type)
-    if type == 'Post'
-      params = {user_id: current_user.id, media_id: object_id, media_type: 'Post', session_id: session_id}
-      open_session = OpenSession.find_by_user_id_and_media_id_and_media_type(current_user.id, object_id, 'Post') || OpenSession.new(params)
+    if type == AppConstants::POST
+      params = {user_id: current_user.id, media_id: object_id, media_type: AppConstants::POST, session_id: session_id}
+      open_session = OpenSession.find_by_user_id_and_media_id_and_media_type(current_user.id, object_id, AppConstants::POST) || OpenSession.new(params)
       open_session.save if open_session.new_record?
       data  = { post: { id: object_id } }
     else
-      params = {user_id: current_user.id, media_id: object_id, media_type: 'Event', session_id: session_id}
-      open_session = OpenSession.find_by_user_id_and_media_id_and_media_type(current_user.id, object_id, 'Event') || OpenSession.new(params)
+      params = {user_id: current_user.id, media_id: object_id, media_type: AppConstants::EVENT, session_id: session_id}
+      open_session = OpenSession.find_by_user_id_and_media_id_and_media_type(current_user.id, object_id, AppConstants::EVENT) || OpenSession.new(params)
       open_session.save if open_session.new_record?
       data  = { event: { id: object_id } }
     end
@@ -81,12 +88,9 @@ class PostChannel < ApplicationCable::Channel
     PostJob.perform_later response, current_user.id
     if broadcast_response.present?
       json_obj = JSON.parse(response)
-      id  = json_obj['data']['comments'][0]['commentable_id']
-      if json_obj['data']['comments'][0]['commentable_type'] == 'Post'
-        PostJob.perform_later broadcast_response, '', id
-      else
-        EventJob.perform_later broadcast_response, id
-      end
+      object_id   = json_obj['data']['comments'][0]['commentable_id']
+      object_type = json_obj['data']['comments'][0]['commentable_type']
+      Comment.broadcast_comment(broadcast_response, object_id,  object_type)
     end
   end
 
@@ -103,38 +107,20 @@ class PostChannel < ApplicationCable::Channel
     PostJob.perform_later resp_broadcast, '', post_id
   end
   
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-
-  
-  
-  def post_members_list(data, current_user)
-    response = PostMember.post_members_list(data, current_user)
-    PostJob.perform_later response, current_user.id
-  end
-  
-  def post_likes_list(data)
-    response = PostLike.post_likes_list(data, current_user)
-    PostJob.perform_later response, current_user.id
-  end
-
-  def auto_complete(data)
-    response = Hashtag.auto_complete(data, current_user)
-    PostJob.perform_later response, current_user.id
-  end
+  # def post_members_list(data, current_user)
+  #   response = PostMember.post_members_list(data, current_user)
+  #   PostJob.perform_later response, current_user.id
+  # end
+  #
+  # def post_likes_list(data)
+  #   response = PostLike.post_likes_list(data, current_user)
+  #   PostJob.perform_later response, current_user.id
+  # end
+  #
+  # def auto_complete(data)
+  #   response = Hashtag.auto_complete(data, current_user)
+  #   PostJob.perform_later response, current_user.id
+  # end
   
   protected
   def find_verified_user
