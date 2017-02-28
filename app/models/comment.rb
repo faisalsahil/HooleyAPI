@@ -188,9 +188,6 @@ class Comment < ApplicationRecord
         else
           resp_data   =  comments_response(comments, current_user, nil, event)
         end
-        if session_id.present?
-          resp_data = resp_data.merge!(session_id: session_id)
-        end
         resp_status     = 1
         resp_message    = 'Comments List'
         resp_errors     = ''
@@ -199,6 +196,10 @@ class Comment < ApplicationRecord
         resp_status     = 1
         resp_message    = 'Errors'
         resp_errors     = 'No comments found'
+      end
+      
+      if session_id.present?
+        resp_data = resp_data.merge!(session_id: session_id)
       end
     
       resp_request_id = data[:request_id]

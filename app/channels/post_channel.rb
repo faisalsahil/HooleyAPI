@@ -114,7 +114,8 @@ class PostChannel < ApplicationCable::Channel
     response, resp_broadcast = Like.like(data, current_user)
     PostJob.perform_later response, current_user.id
     json_obj = JSON.parse(response)
-    if json_obj["resp_status"] == AppConstants::LIKED
+    binding.pry
+    if json_obj["message"] == AppConstants::LIKED
       object_id   = json_obj['data']['like']['likable_id']
       object_type = json_obj['data']['like']['likable_type']
       Like.broadcast_like(resp_broadcast, object_id,  object_type)

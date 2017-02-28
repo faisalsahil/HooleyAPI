@@ -61,7 +61,7 @@ class Like < ApplicationRecord
                     }
                 }
             },
-            post: {
+            likable: {
                 only: [:id],
                 methods: [:likes_count]
             }
