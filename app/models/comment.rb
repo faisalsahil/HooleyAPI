@@ -237,7 +237,8 @@ class Comment < ApplicationRecord
         open_sessions.each do |open_session|
           broadcast_response = response.merge!(session_id: open_session.session_id)
           broadcast_response = JsonBuilder.json_builder(broadcast_response, resp_status, resp_message, resp_request_id, errors: resp_errors, type: "Sync")
-          EventJob.perform_later broadcast_response, open_session.user_id
+          PostJob.perform_later broadcast_response, open_session.user_id
+          # EventJob.perform_later broadcast_response, open_session.user_id
         end
       end
     rescue Exception => e
