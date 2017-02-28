@@ -84,7 +84,7 @@ class Comment < ApplicationRecord
         }
     )
     if post.present?
-      status = PostLike.liked_by_me(post, current_user.profile_id)
+      status = Like.liked_by_me(post, current_user.profile_id)
       post   = post.as_json(
           only: [:id, :post_title, :post_description, :datetime, :post_datetime, :is_post_public, :created_at, :updated_at, :post_type, :location, :latitude, :longitude],
           methods: [:likes_count, :comments_count, :post_members_counts],
@@ -155,7 +155,7 @@ class Comment < ApplicationRecord
     end
   end
 
-  def self.comments_list(data, current_user, sync=nil)
+  def self.comments_list(data, current_user, sync=nil, session_id=nil)
     begin
       data = data.with_indifferent_access
       max_comment_date = data[:max_comment_date] || Time.now
@@ -187,6 +187,9 @@ class Comment < ApplicationRecord
           resp_data   =  comments_response(comments, current_user, post)
         else
           resp_data   =  comments_response(comments, current_user, nil, event)
+        end
+        if session_id.present?
+          resp_data = resp_data.merge!(session_id: session_id)
         end
         resp_status     = 1
         resp_message    = 'Comments List'

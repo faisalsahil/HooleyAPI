@@ -5,14 +5,16 @@ class Post < ApplicationRecord
 
   belongs_to :member_profile
   belongs_to :event
-  has_one    :user,      as: :profile
-  has_many   :post_members,                dependent: :destroy
-  has_many   :post_likes,                  dependent: :destroy
-  has_many   :comments,  as: :commentable, dependent: :destroy
-  has_many   :recent_comments, -> { order(created_at: :desc).limit(10) }, class_name: 'Comment', as: :commentable
-  has_many   :recent_post_likes,    -> { order(created_at: :desc).limit(10) }, class_name: 'PostLike'
+  
+  has_many   :post_members,       dependent: :destroy
   has_many   :post_users,         dependent: :destroy
   has_many   :post_attachments,   dependent: :destroy
+  has_many   :comments,           dependent: :destroy, as: :commentable
+  has_many   :likes,              dependent: :destroy, as: :likable
+  has_one    :user,                                    as: :profile
+  has_many   :recent_comments, -> { order(created_at: :desc).limit(10) }, class_name: 'Comment', as: :commentable
+  has_many   :recent_likes,    -> { order(created_at: :desc).limit(10) }, class_name: 'Like',    as: :likable
+  
 
   accepts_nested_attributes_for  :post_attachments, :post_members, :post_users
 
@@ -111,7 +113,7 @@ class Post < ApplicationRecord
   end
 
   def likes_count
-    self.post_likes.where(like_status: true, is_deleted: false).count
+    self.likes.where(is_like: true, is_deleted: false).count
   end
 
   def comments_count
@@ -121,12 +123,12 @@ class Post < ApplicationRecord
 
   def count
     # self.post_likes.where(like_status: true, is_deleted: false) + self.post_comments.where(is_deleted: false).count
-    self.post_likes.where(like_status: true, is_deleted: false) + self.comments.where(is_deleted: false).count
+    self.likes.where(is_like: true, is_deleted: false) + self.comments.where(is_deleted: false).count
   end
 
   def liked_by_me
-    post_like = self.post_likes.where(member_profile_id: @@current_profile.id).try(:first)
-    if post_like && post_like.like_status
+    post_like = self.likes.where(member_profile_id: @@current_profile.id).try(:first)
+    if post_like && post_like.is_like
       true
     else
       false
@@ -457,8 +459,8 @@ class Post < ApplicationRecord
           likes_count:    post.post_likes.count,
           comments_count: post.comments.count,
           post_members_counts: post.post_members.count,
-          liked_by_me: PostLike.liked_by_me(post, current_user.profile_id),
-          count: post.post_likes.where(like_status: true, is_deleted: false).count + post.comments.where(is_deleted: false).count,
+          liked_by_me: Like.liked_by_me(post, current_user.profile_id),
+          count: post.likes.where(is_like: true, is_deleted: false).count + post.comments.where(is_deleted: false).count,
           member_profile: {
               id:     member_profile.id,
               photo:  member_profile.photo,
@@ -518,7 +520,7 @@ class Post < ApplicationRecord
           only: [:id, :post_title, :event_id, :post_description, :datetime, :is_post_public, :is_deleted, :created_at, :updated_at, :post_type, :location, :latitude, :longitude],
           methods: [:likes_count, :comments_count],
           :procs => Proc.new { |options, post|
-            options[:builder].tag!('liked_by_me', PostLike.liked_by_me(post, profile.id))
+            options[:builder].tag!('liked_by_me', Like.liked_by_me(post, profile.id))
           },
           include: {
               member_profile: {
@@ -532,7 +534,7 @@ class Post < ApplicationRecord
               event:{
                   only:[:id, :event_name]
               },
-              recent_post_likes: {
+              recent_likes: {
                   only: [:id, :created_at, :updated_at],
                   include: {
                       member_profile: {
@@ -630,7 +632,7 @@ class Post < ApplicationRecord
             event:{
                 only:[:id, :event_name]
             },
-            recent_post_likes: {
+            recent_likes: {
                 only: [:id, :created_at, :updated_at],
                 include: {
                     member_profile: {

@@ -47,7 +47,7 @@ class PostChannel < ApplicationCable::Channel
       open_session.save if open_session.new_record?
       data  = { event: { id: object_id } }
     end
-    response = Comment.comments_list(data, current_user, true)
+    response = Comment.comments_list(data, current_user, true, session_id)
     PostJob.perform_later response, current_user.id
   end
 
@@ -99,12 +99,26 @@ class PostChannel < ApplicationCable::Channel
     PostJob.perform_later response, current_user.id
   end
 
-  def post_like(data)
-    response, resp_broadcast = PostLike.post_like(data, current_user)
+  # def post_like(data)
+  #   response, resp_broadcast = Like.like(data, current_user)
+  #   PostJob.perform_later response, current_user.id
+  #   json_obj = JSON.parse(response)
+  #   if json_obj["resp_status"] == AppConstants::LIKED
+  #     object_id   = json_obj['data']['like']['likable_id']
+  #     object_type = json_obj['data']['like']['likable_type']
+  #     Like.broadcast_like(resp_broadcast, object_id,  object_type)
+  #   end
+  # end
+
+  def like(data)
+    response, resp_broadcast = Like.like(data, current_user)
     PostJob.perform_later response, current_user.id
     json_obj = JSON.parse(response)
-    post_id  = json_obj["data"]["post_like"]["post"]["id"]
-    PostJob.perform_later resp_broadcast, '', post_id
+    if json_obj["resp_status"] == AppConstants::LIKED
+      object_id   = json_obj['data']['like']['likable_id']
+      object_type = json_obj['data']['like']['likable_type']
+      Like.broadcast_like(resp_broadcast, object_id,  object_type)
+    end
   end
   
   # def post_members_list(data, current_user)
