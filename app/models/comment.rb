@@ -5,7 +5,7 @@ class Comment < ApplicationRecord
 
   validates_presence_of :comment, presence: true
 
-  @@limit = 3
+  @@limit = 10
 
   def is_co_host_or_host
     profile_id = self.member_profile_id
@@ -201,12 +201,12 @@ class Comment < ApplicationRecord
       if session_id.present?
         resp_data = resp_data.merge!(session_id: session_id)
       end
-    
+      paging_data     = {next_page_exist: next_page_exist, previous_page_exist: previous_page_exist}
       resp_request_id = data[:request_id]
       if sync.present?
-        JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, type: "Sync", next_page_exist: next_page_exist, previous_page_exist: previous_page_exist, post_list: true)
+        JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, type: "Sync", paging_data: paging_data)
       else
-        JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, next_page_exist: next_page_exist, previous_page_exist: previous_page_exist, post_list: true)
+        JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
       end
     rescue Exception => e
       resp_data       = {}
