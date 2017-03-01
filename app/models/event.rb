@@ -402,34 +402,52 @@ class Event < ApplicationRecord
     begin
       event_member = EventMember.find_by_member_profile_id_and_event_id(current_user.profile_id, data[:event_id])
       if event_member.present?
-        if data[:visiting_status] == 'on_the_way' || data[:visiting_status] == 'reached' || data[:visiting_status] == 'gone'
+        if data[:visiting_status] == AppConstants::ON_WAY || data[:visiting_status] == AppConstants::REACHED || data[:visiting_status] == AppConstants::GONE
           event_member.visiting_status = data[:visiting_status]
           event_member.save!
-          resp_data       = {}
-          resp_status     = 1
-          resp_message    = 'success'
-          resp_errors     = ''
+          event  = event_member.event
+          if data[:visiting_status] == AppConstants::ON_WAY
+            message  = AppConstants::MESSAGE_ON_THE_WAY
+          elsif data[:visiting_status] == AppConstants::REACHED
+            message  = AppConstants::MESSAGE_REACHED
+          elsif data[:visiting_status] == AppConstants::GONE
+            message  = AppConstants::MESSAGE_GONE
+          end
+          comment  = event.comments.build(member_profile_id: current_user.profile_id, comment: message)
+          comment.save!
+          comments =  Comment.where(id: comment.id)
+          broadcast_response  =  Comment.comments_response(comments, current_user, nil, event)
+          resp_data     = {}
+          resp_status   = 1
+          resp_message  = 'success'
+          resp_errors   = ''
         else
-          resp_data       = {}
-          resp_status     = 0
-          resp_message    = 'error'
-          resp_errors     = 'Visiting Status is not correct.'
+          resp_data          = {}
+          broadcast_response = ''
+          resp_status   = 0
+          resp_message  = 'error'
+          resp_errors   = 'Visiting Status is not correct.'
         end
       else
-        resp_data       = {}
+        resp_data          = {}
+        broadcast_response = ''
         resp_status     = 0
         resp_message    = 'error'
         resp_errors     = 'You\'re not registered.'
       end
+      resp_request_id = ''
+      resp_request_id = data[:request_id] if data[:request_id].present?
+      response = JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
+      [response, broadcast_response]
     rescue Exception => e
       resp_data       = {}
       resp_status     = 0
       resp_message    = 'error'
       resp_errors     = e
+      resp_request_id = ''
+      resp_request_id = data[:request_id] if data[:request_id].present?
+      JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
     end
-    resp_request_id = ''
-    resp_request_id = data[:request_id] if data[:request_id].present?
-    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
   end
   
   def self.event_add_members(data, current_user)

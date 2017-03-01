@@ -9,7 +9,7 @@ class Comment < ApplicationRecord
 
   def is_co_host_or_host
     profile_id = self.member_profile_id
-    if self.commentable_type == 'Event'
+    if self.commentable_type == AppConstants::EVENT
       event  = self.commentable
     else
       event  = self.commentable.event
@@ -52,7 +52,7 @@ class Comment < ApplicationRecord
         resp_data       = {}
         resp_request_id = data[:request_id]
         resp_status     = 0
-        resp_message    = 'Errors'
+        resp_message    = 'error'
         resp_errors     = 'Comment failed'
         response        = JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
         broadcast_response = false

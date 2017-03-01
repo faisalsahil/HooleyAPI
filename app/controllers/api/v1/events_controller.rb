@@ -198,12 +198,16 @@ class Api::V1::EventsController < ApplicationController
     #   "auth_token": "111111111",
     #   "per_page":10,
     #   "page":1,
-    #   "event_id": 13,
-    #   "visiting_status": "on_the_way/reached/gone"
+    #   "event_id": 1,
+    #   "visiting_status": "on_the_way"
     # }
     user_session = UserSession.find_by_auth_token(params[:auth_token])
     if user_session.present?
-      response = Event.event_attending_status(params, user_session.user)
+      response, broadcast_response = Event.event_attending_status(params, user_session.user)
+      if broadcast_response.present?
+        object_id = broadcast_response['event']['id']
+        Comment.broadcast_comment(broadcast_response, object_id, AppConstants::EVENT)
+      end
       render json: response
     else
       resp_data = {resp_data: {}, resp_status: 0, resp_message: 'Invalid Token', resp_error: 'error'}.as_json
