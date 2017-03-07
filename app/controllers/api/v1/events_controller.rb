@@ -217,18 +217,14 @@ class Api::V1::EventsController < ApplicationController
   
   def event_add_members
     # params = {
-    #   "auth_token": "111111111",
+    #   "auth_token": "1111111111",
     #   "per_page":10,
     #   "page":1,
     #   "event": {
-    #       "id": 13,
+    #       "id": 1,
     #       "event_members_attributes":[
     #            {
-    #                "member_profile_id": 6,
-    #                "is_invited": true
-    #            },
-    #            {
-    #                "member_profile_id": 7,
+    #                "member_profile_id": 3,
     #                "is_invited": true
     #            }
     #       ]

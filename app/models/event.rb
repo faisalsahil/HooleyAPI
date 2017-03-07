@@ -147,7 +147,7 @@ class Event < ApplicationRecord
       per_page = (data[:per_page] || @@limit).to_i
       page     = (data[:page] || 1).to_i
       
-      events   = Event.all
+      events   = Event.where(is_public: true)
       if data[:type].present? && data[:type] == AppConstants::SEARCH
         events  = search_event_list(data)
       elsif data[:type].present? && data[:type] == AppConstants::UPCOMING && data[:list_type] == AppConstants::DAY
@@ -209,6 +209,7 @@ class Event < ApplicationRecord
     if data[:keyword].present?
       # events = Event.search_by_title(data[:keyword])
       events = Event.where('lower(event_name) like ? OR lower(event_details) like ?', "%#{data[:keyword]}%".downcase, "%#{data[:keyword]}%".downcase)
+      events = events.where(is_public: true)
     end
     if data[:date].present?
       events = events.where('Date(start_date) = ?', data[:date])
@@ -246,7 +247,7 @@ class Event < ApplicationRecord
         
         if data[:type].present? && data[:type] ==  AppConstants::FRIENDS
           profile_ids =  member_profile.member_followings.where(following_status: AppConstants::ACCEPTED, is_deleted:false).pluck(:following_profile_id)
-          posts       = posts.where(member_profile_id: profile_ids)
+          posts       =  posts.where(member_profile_id: profile_ids)
         end
 
         if data[:type].present? && data[:type] ==  AppConstants::LIKED
@@ -297,8 +298,9 @@ class Event < ApplicationRecord
           # events   = Event.where('member_profile_id = ? OR id IN(?)', member_profile.id, event_ids)
           events = member_profile.events
         else
-          event_ids= EventMember.where(member_profile_id: member_profile.id).pluck(:event_id)
-          events   = Event.where('(member_profile_id = ? OR id IN(?)) AND is_public = ?', member_profile.id, event_ids, true)
+          # event_ids = EventMember.where(member_profile_id: member_profile.id).pluck(:event_id)
+          # events    = Event.where('(member_profile_id = ? OR id IN(?)) AND is_public = ?', member_profile.id, event_ids, true)
+          events = member_profile.events.where(is_public: true)
         end
         
         if data[:search_key].present?
@@ -355,7 +357,7 @@ class Event < ApplicationRecord
       member_profiles = MemberProfile.where(id: profile_ids)
 
       if data[:search_key].present?
-        profile_ids = member_profiles.pluck(:id)
+        # profile_ids = member_profiles.pluck(:id)
         users = User.where(profile_id: profile_ids)
         profile_ids = users.where('lower(first_name) like ? OR lower(last_name) like ? OR email like ? OR lower(username) like ? ', "%#{data[:search_key]}%".downcase, "%#{data[:search_key]}%".downcase, "%#{data[:search_key]}%".downcase, "%#{data[:search_key]}%".downcase).pluck(:profile_id)
         member_profiles  = MemberProfile.where(id: profile_ids)
@@ -453,18 +455,25 @@ class Event < ApplicationRecord
   def self.event_add_members(data, current_user)
     begin
       event = Event.find_by_id(data[:event][:id])
-      event_members = data[:event][:event_members_attributes]
-      event_members.each do |member|
-        event_member = EventMember.find_by_member_profile_id_and_event_id(member[:member_profile_id], event.id) || event.event_members.build
-        if event_member.new_record?
-          event_member.member_profile_id = member[:member_profile_id]
-          event_member.save
+      if current_user.profile_id == event.member_profile_id || event.is_friends_allowed?
+        event_members = data[:event][:event_members_attributes]
+        event_members.each do |member|
+          event_member = EventMember.find_by_member_profile_id_and_event_id(member[:member_profile_id], event.id) || event.event_members.build
+          if event_member.new_record?
+            event_member.member_profile_id = member[:member_profile_id]
+            event_member.save
+          end
         end
+        resp_data       = {}
+        resp_status     = 1
+        resp_message    = 'success'
+        resp_errors     = ''
+      else
+        resp_data       = {}
+        resp_status     = 1
+        resp_message    = 'You are not allowed to invite friends.'
+        resp_errors     = ''
       end
-      resp_data       = {}
-      resp_status     = 1
-      resp_message    = 'success'
-      resp_errors     = ''
     rescue Exception => e
       resp_data       = {}
       resp_status     = 0
