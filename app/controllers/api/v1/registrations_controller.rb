@@ -29,21 +29,21 @@ class Api::V1::RegistrationsController < ApplicationController
   EOS
 
   def sign_up
-    params = {
-        member_profile: {
-            is_profile_public: false,
-            account_type: "personal",
-            gender: "male",
-            dob: "12/04/1981",
-            user_attributes: {
-                email: "test3@gmail.com",
-                first_name: "Test3",
-                last_name: "Testing",
-                password: "test123456",
-                password_confirmation: "test123456"
-            }
-        }
-    }
+    # params = {
+    #     member_profile: {
+    #         is_profile_public: false,
+    #         account_type: "personal",
+    #         gender: "male",
+    #         dob: "12/04/1981",
+    #         user_attributes: {
+    #             email: "test3@gmail.com",
+    #             first_name: "Test3",
+    #             last_name: "Testing",
+    #             password: "test123456",
+    #             password_confirmation: "test123456"
+    #         }
+    #     }
+    # }
     resp_data = MemberProfile.sign_up(params)
     render json: resp_data
   end

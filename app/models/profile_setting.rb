@@ -1,0 +1,2 @@
+class ProfileSetting < ApplicationRecord
+end

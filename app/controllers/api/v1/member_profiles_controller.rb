@@ -3,8 +3,8 @@ class Api::V1::MemberProfilesController < ApplicationController
   
   def get_profile
     # params = {
-    #     "auth_token": "111111111",
-    #     "member_profile_id": 3
+    #     "auth_token": "1111111111",
+    #     "member_profile_id": 2
     # }
     user_session = UserSession.find_by_auth_token(params[:auth_token])
     if user_session.present?
