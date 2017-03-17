@@ -20,17 +20,17 @@ class Api::V1::UserSessionsController < ApplicationController
   EOS
 
   def login
-    params = {
-        "user":{
-            "email":"test1@gmail.com",
-            "password":"test123456"
-        },
-        "user_session": {
-            "device_uuid": "vBD-y53ED85-FB4",
-            "device_type": "ios",
-            "device_token": "637vvs6-6-6-6-6-6-7"
-        }
-    }
+    # params = {
+    #     "user":{
+    #         "email":"test1@gmail.com",
+    #         "password":"test123456"
+    #     },
+    #     "user_session": {
+    #         "device_uuid": "vBD-y53ED85-FB4",
+    #         "device_type": "ios",
+    #         "device_token": "637vvs6-6-6-6-6-6-7"
+    #     }
+    # }
     resp_data = User.sign_in(params)
     render json: resp_data
   end
