@@ -23,6 +23,7 @@ module AppConstants
   BOOKMARK  = 'bookmarked'
   NEAR_ME   = 'near_me'
   FOLLOWING = 'following'
+  TRENDING  = 'trending'
   REACHED   = 'reached'
   GONE      = 'gone'
   ON_WAY    = 'on_the_way'

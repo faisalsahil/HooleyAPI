@@ -59,8 +59,10 @@ class User < ApplicationRecord
         user_session.session_status = 'open'
         user_session.save!
 
-        user.current_sign_in_at     = Time.now
-        user.synced_datetime        = nil
+        # user.current_sign_in_at     = Time.now
+        user.following_sync_datetime= nil
+        user.nearme_sync_datetime   = nil
+        user.trending_sync_datetime = nil
         user.last_subscription_time = nil
         user.save!
         # destroy open sessions of post/event
@@ -77,13 +79,13 @@ class User < ApplicationRecord
         resp_message = 'User Profile'
         resp_errors  = ''
       else
-        resp_data    = ''
+        resp_data    = {}
         resp_status  = 0
         resp_message = 'Errors'
         resp_errors  = 'You are not allowed to sign in'
       end
     else
-      resp_data    = ''
+      resp_data    = {}
       resp_status  = 0
       resp_message = 'Errors'
       resp_errors  = 'Either your email or password is incorrect'
@@ -102,15 +104,15 @@ class User < ApplicationRecord
         resp_status     = 1
         resp_message    = 'Please check your email and follow the instructions.'
         resp_errors     = ''
-        resp_data       = ''
+        resp_data       = {}
       else
-        resp_data       = ''
+        resp_data       = {}
         resp_status     = 0
         resp_message    = 'Errors'
         resp_errors     = 'User does not exist.'
       end
     rescue Exception => e
-      resp_data       = ''
+      resp_data       = {}
       resp_status     = 0
       resp_message    = 'error'
       resp_errors     = e
@@ -131,15 +133,15 @@ class User < ApplicationRecord
         resp_status     = 1
         resp_message    = 'Password Successfully Changed.'
         resp_errors     = ''
-        resp_data       = ''
+        resp_data       = {}
       else
         resp_status     = 0
         resp_message    = 'Error'
         resp_errors     = 'Your current password is incorrect.'
-        resp_data       = ''
+        resp_data       = {}
       end
     rescue Exception => e
-      resp_data       = ''
+      resp_data       = {}
       resp_status     = 0
       paging_data     = ''
       resp_message    = 'error'
@@ -157,15 +159,16 @@ class User < ApplicationRecord
         user_session.session_status = 'closed'
         user_session.save!
       end
-      current_user.current_sign_in_at = nil
-      current_user.synced_datetime    = nil
+      user.following_sync_datetime= nil
+      user.nearme_sync_datetime   = nil
+      user.trending_sync_datetime = nil
       current_user.save!
       resp_status     = 1
       resp_message    = 'Logout successful.'
       resp_errors     = ''
-      resp_data       = ''
+      resp_data       = {}
     rescue Exception => e
-      resp_data       = ''
+      resp_data       = {}
       resp_status     = 0
       resp_message    = 'error'
       resp_errors     = e

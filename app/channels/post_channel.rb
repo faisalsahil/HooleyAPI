@@ -2,15 +2,17 @@ class PostChannel < ApplicationCable::Channel
   
   # after_subscribe :newly_created_posts
   def subscribed
-    if params[:post_id].present?
+    if current_user.present? && params[:post_id].present?
       stream_from "post_#{params[:post_id]}"
       sync_comments(current_user, params[:post_id], params[:session_id],'Post')
-    elsif params[:event_id].present?
+    elsif current_user.present? && params[:event_id].present?
       stream_from "event_#{params[:event_id]}"
       sync_comments(current_user, params[:event_id], params[:session_id], 'Event')
+    elsif current_user.present? && params[:type].present?
+      stream_from "post_channel_#{current_user.id}"
+      newly_created_syncing_posts(current_user, params[:session_id], params[:type])
     elsif current_user.present?
       stream_from "post_channel_#{current_user.id}"
-      newly_created_posts(current_user)
     else
       current_user = find_verified_user
       stream_from "post_channel_#{current_user.id}"
@@ -18,20 +20,31 @@ class PostChannel < ApplicationCable::Channel
   end
 
   def unsubscribed
-    current_user.last_subscription_time = Time.now
-    current_user.save!
     if params[:post_id].present?
       open_sessions = OpenSession.where(user_id: current_user.id, media_id: params[:post_id], media_type: AppConstants::POST)
       open_sessions.destroy_all if open_sessions.present?
     elsif params[:event_id].present?
       open_sessions = OpenSession.where(user_id: current_user.id, media_id: params[:event_id], media_type: AppConstants::EVENT)
       open_sessions.destroy_all if open_sessions.present?
+    else
     end
+    current_user.last_subscription_time = Time.now
+    current_user.save!
     stop_all_streams
   end
 
-  def newly_created_posts(current_user)
-    response = Post.newly_created_posts(current_user)
+  def newly_created_syncing_posts(current_user, session_id, type)
+    params = {user_id: current_user.id, media_type: type, session_id: session_id}
+    open_session = OpenSession.find_by_user_id_and_media_type(current_user.id, type) || OpenSession.new(params)
+    open_session.save if open_session.new_record?
+    
+    if type == AppConstants::FOLLOWING
+      response = Post.newly_created_following_posts(current_user, session_id)
+    elsif type == AppConstants::NEAR_ME
+      response = Post.newly_created_nearest_posts(current_user, session_id)
+    elsif type == AppConstants::TRENDING
+      response = Post.newly_created_nearest_posts(current_user, session_id)
+    end
     PostJob.perform_later response, current_user.id if response.present?
   end
 

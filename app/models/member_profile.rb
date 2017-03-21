@@ -79,7 +79,7 @@ class MemberProfile < ApplicationRecord
 
   def member_profile(auth_token=nil)
     member_profile = self.as_json(
-        only: [:id, :photo, :country_id, :city_id, :is_profile_public, :default_group_id, :gender, :dob, :account_type, :high_school, :is_age_visible, :gender, :current_city, :home_town, :employer, :college, :high_school, :organization, :hobbies,:contact_email, :contact_phone, :contact_website, :contact_address, :banner_image],
+        only: [:id, :photo, :country_id, :city_id, :is_profile_public, :default_group_id, :gender, :dob, :account_type, :high_school, :is_age_visible, :gender, :current_city, :home_town, :employer, :college, :high_school, :organization, :hobbies, :banner_image],
         methods: [:posts_count, :followings_count, :followers_count],
         include: {
             user: {
@@ -170,8 +170,10 @@ class MemberProfile < ApplicationRecord
 
       if user.present?
         UserAuthentication.create_from_social_data(member_profile.user.user_authentications.first, user)
-        user.current_sign_in_at = Time.now
-        user.synced_datetime = nil
+        # user.current_sign_in_at = Time.now
+        user.following_sync_datetime= nil
+        user.nearme_sync_datetime   = nil
+        user.trending_sync_datetime = nil
         user.last_subscription_time = nil
         user.save!
         social_sign_up_response(data, user.profile)
@@ -186,8 +188,10 @@ class MemberProfile < ApplicationRecord
         member_profile.is_profile_public = true #should be in migration default false : Later
         if member_profile.save
           user = member_profile.user
-          user.current_sign_in_at = Time.now
-          user.synced_datetime = nil
+          # user.current_sign_in_at = Time.now
+          user.following_sync_datetime= nil
+          user.nearme_sync_datetime   = nil
+          user.trending_sync_datetime = nil
           user.last_subscription_time = nil
           user.save!
           social_sign_up_response(data, member_profile)
@@ -204,8 +208,10 @@ class MemberProfile < ApplicationRecord
     else
       # SignIn Here
       user = auth.user
-      user.current_sign_in_at = Time.now
-      user.synced_datetime = nil
+      # user.current_sign_in_at = Time.now
+      user.following_sync_datetime= nil
+      user.nearme_sync_datetime   = nil
+      user.trending_sync_datetime = nil
       user.last_subscription_time = nil
       user.save!
       social_sign_up_response(data, auth.user.profile)
@@ -334,7 +340,14 @@ class MemberProfile < ApplicationRecord
       profile      = MemberProfile.find_by_id(data[:member_profile_id])
       if data[:type].present?
         if data[:type] == AppConstants::NEAR_ME
-          posts = Post.within(5, :origin => [data[:latitude], data[:longitude]])
+          if profile.latitude.present?
+            latitude  = profile.latitude
+            longitude = profile.longitude
+          else
+            latitude  = data[:latitude]
+            longitude = data[:longitude]
+          end
+          posts = Post.within(profile.near_event_search, :origin => [latitude, longitude])
           posts = posts.where(is_deleted: false, is_post_public: true)
         end
         if data[:type] == AppConstants::FOLLOWING
@@ -358,7 +371,7 @@ class MemberProfile < ApplicationRecord
       resp_message  = 'TimeLine'
       resp_errors   = ''
     rescue Exception => e
-      resp_data    = ''
+      resp_data    = {}
       resp_status  = 0
       paging_data  = ''
       resp_message = 'error'
