@@ -135,7 +135,7 @@ class Post < ApplicationRecord
     end
   end
   
-  def self.post_create(data, current_user)
+  def self.post_create(data, current_user, session_id=nil)
     begin
       data    = data.with_indifferent_access
       profile = current_user.profile
@@ -146,7 +146,7 @@ class Post < ApplicationRecord
         resp_message    = 'Post Created'
         resp_errors     = ''
       else
-        resp_data       = ''
+        resp_data       = {}
         resp_status     = 0
         resp_message    = 'Errors'
         resp_errors     = post.errors.messages
@@ -158,41 +158,54 @@ class Post < ApplicationRecord
       resp_message    = 'error'
       resp_errors     = e
     end
+    if session_id.present?
+      resp_data = resp_data.merge!(session_id: session_id)
+    end
     resp_request_id = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
   end
 
   def self.post_sync(post_id, current_user)
     posts = Post.where(id: post_id)
-    make_post_sync_response(current_user, posts)
     member_profile_ids = []
     member_profile_ids << posts.first.post_members.pluck(:member_profile_id)
     
     # Followers
     member_profile_ids << MemberFollowing.where("following_profile_id = ? AND following_status = ? ", current_user.profile_id, AppConstants::ACCEPTED).pluck(:member_profile_id)
-    users = User.where(profile_id: member_profile_ids.flatten.uniq)
-
-    users && users.each do |user|
-      if user != current_user
-        make_post_sync_response(user, posts)
+    users    = User.where(profile_id: member_profile_ids.flatten.uniq)
+    user_ids = []
+    user_ids << current_user.id
+    user_ids << users.pluck(:id)
+    user_ids  = user_ids.flatten.uniq
+    open_sessions = OpenSession.where(user_id: user_ids)
+    open_sessions.each do |open_session|
+      profile = User.find_by_id(open_session.user_id).profile
+      if open_session.media_type == AppConstants::FOLLOWING
+        sync_post_to_following_response(open_session.user_id, profile, posts, open_session.session_id)
+      elsif open_session.media_type == AppConstants::NEAR_ME
+        near_post = Post.within(profile.near_event_search, :origin => [profile.latitude, profile.longitude]).where(id: post_id)
+        if near_post.present?
+          sync_post_to_following_response(open_session.user_id, profile, posts, open_session.session_id)
+        end
       end
     end
   end
 
-  def self.make_post_sync_response(user, posts)
-    profile = user.profile
+  def self.sync_post_to_following_response(user_id, profile, posts, session_id)
     sync_object             = profile.synchronizations.build
     sync_object.sync_token  = SecureRandom.uuid
+    sync_object.sync_type   = AppConstants::FOLLOWING
     sync_object.synced_date = posts.first.updated_at
     sync_object.save!
 
     resp_data       = posts_array_response(posts, profile, sync_object.sync_token)
+    resp_data       = resp_data.merge!(session_id: session_id)
     resp_status     = 1
     resp_request_id = ''
     resp_message    = 'Posts'
     resp_errors     = ''
     response        = JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, type: "Sync")
-    PostJob.perform_later response, user.id
+    PostJob.perform_later response, user_id
   end
 
   def self.post_destroy(data, current_user)

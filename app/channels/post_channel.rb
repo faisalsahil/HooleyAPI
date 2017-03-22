@@ -22,12 +22,12 @@ class PostChannel < ApplicationCable::Channel
   def unsubscribed
     if params[:post_id].present?
       open_sessions = OpenSession.where(user_id: current_user.id, media_id: params[:post_id], media_type: AppConstants::POST)
-      open_sessions.destroy_all if open_sessions.present?
     elsif params[:event_id].present?
       open_sessions = OpenSession.where(user_id: current_user.id, media_id: params[:event_id], media_type: AppConstants::EVENT)
-      open_sessions.destroy_all if open_sessions.present?
-    else
+    elsif params[:type].present? && params[:session_id].present?
+      open_sessions = OpenSession.where(user_id: current_user.id, session_id: params[:session_id])
     end
+    open_sessions.destroy_all if open_sessions.present?
     current_user.last_subscription_time = Time.now
     current_user.save!
     stop_all_streams
@@ -65,7 +65,11 @@ class PostChannel < ApplicationCable::Channel
   end
 
   def post_create(data)
-    response = Post.post_create(data, current_user)
+    if params.present? && params[:type].present?
+      response = Post.post_create(data, current_user, params[:session_id])
+    else
+      response = Post.post_create(data, current_user)
+    end
     PostJob.perform_later response, current_user.id
     json_obj = JSON.parse(response)
     post_id  = json_obj["data"]["post"]["id"]
