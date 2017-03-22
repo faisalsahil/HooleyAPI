@@ -79,7 +79,7 @@ class MemberProfile < ApplicationRecord
 
   def member_profile(auth_token=nil)
     member_profile = self.as_json(
-        only: [:id, :photo, :country_id, :city_id, :is_profile_public, :default_group_id, :gender, :dob, :account_type, :high_school, :is_age_visible, :gender, :current_city, :home_town, :employer, :college, :high_school, :organization, :hobbies, :banner_image],
+        only: [:id, :photo, :country_id, :city_id, :is_profile_public, :gender, :dob, :high_school, :is_age_visible, :gender, :current_city, :home_town, :employer, :college, :high_school, :organization, :hobbies, :banner_image, :is_near_me_event_alert, :is_hooly_invite_alert, :is_my_upcoming_event_alert, :is_direct_message_alert, :is_contact_info_shown, :is_social_info_shown, :is_direct_message_allow, :is_private_media_share, :is_public_media_share, :near_event_search],
         methods: [:posts_count, :followings_count, :followers_count],
         include: {
             user: {
@@ -245,21 +245,21 @@ class MemberProfile < ApplicationRecord
         current_user = User.find_by_id(current_user.id)
       end
       if profile.update_attributes(data[:member_profile])
-        resp_data = current_user.profile.member_profile
-        resp_status = 1
+        resp_data    = current_user.profile.member_profile
+        resp_status  = 1
         resp_message = 'success'
-        resp_errors = ''
+        resp_errors  = ''
       else
-        resp_data = ''
-        resp_status = 0
+        resp_data    = {}
+        resp_status  = 0
         resp_message = 'error'
-        resp_errors = error_messages(profile)
+        resp_errors  = error_messages(profile)
       end
     rescue Exception => e
-      resp_data = ''
-      resp_status = 0
+      resp_data    = {}
+      resp_status  = 0
       resp_message = 'error'
-      resp_errors = e
+      resp_errors  = e
     end
     resp_request_id = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)

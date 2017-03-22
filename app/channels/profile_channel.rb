@@ -19,10 +19,10 @@ class ProfileChannel < ApplicationCable::Channel
     ProfileJob.perform_later response, current_user.id
   end
   
-  def update_user_location(data)
-    response = MemberProfile.update_user_location(data, current_user)
-    ProfileJob.perform_later response, current_user.id
-  end
+  # def update_user_location(data)
+  #   response = MemberProfile.update_user_location(data, current_user)
+  #   ProfileJob.perform_later response, current_user.id
+  # end
   
   def reset_password(data)
     response = User.reset_password(data, current_user)
