@@ -332,10 +332,10 @@ class MemberProfile < ApplicationRecord
   end
 
   def self.profile_timeline(data, current_user)
-    begin
+    # begin
       data         = data.with_indifferent_access
-      per_page     = (data[:per_page] || @@limit).to_i
-      page         = (data[:page] || 1).to_i
+      max_post_date = data[:max_post_date] || Time.now
+      min_post_date = data[:min_post_date] || Time.now
 
       profile      = MemberProfile.find_by_id(data[:member_profile_id])
       if data[:type].present?
@@ -357,26 +357,37 @@ class MemberProfile < ApplicationRecord
       else
         posts   = profile.posts
       end
-      
+
+      if data[:max_post_date].present?
+        posts = posts.where("created_at > ?", max_post_date)
+      elsif data[:min_post_date].present?
+        posts = posts.where("created_at < ?", min_post_date)
+      end
+      post_ids = posts.pluck(:id)
       if data[:filter_type].present?
-        posts = posts.joins(:post_attachments).where(post_attachments: {attachment_type: data[:filter_type]})
+        posts = Post.joins(:post_attachments).where(id: post_ids, post_attachments: {attachment_type: data[:filter_type]})
       end
       
-      posts         = posts.order("created_at DESC")
-      posts         = posts.page(page.to_i).per_page(per_page.to_i)
-    
-      paging_data   = JsonBuilder.get_paging_data(page, per_page, posts)
+      posts = posts.order("created_at DESC")
+      posts = posts.limit(@@limit)
+      
+      if posts.present?
+        Post.where("created_at > ?", posts.first.created_at).present? ? previous_page_exist = true : previous_page_exist = false
+        Post.where("created_at < ?", posts.last.created_at).present? ? next_page_exist = true : next_page_exist = false
+      end
+      
+      paging_data   = {next_page_exist: next_page_exist, previous_page_exist: previous_page_exist}
       resp_data     = Post.timeline_posts_array_response(posts, profile, current_user)
       resp_status   = 1
       resp_message  = 'TimeLine'
       resp_errors   = ''
-    rescue Exception => e
-      resp_data    = {}
-      resp_status  = 0
-      paging_data  = ''
-      resp_message = 'error'
-      resp_errors  = e
-    end
+    # rescue Exception => e
+    #   resp_data    = {}
+    #   resp_status  = 0
+    #   paging_data  = ''
+    #   resp_message = 'error'
+    #   resp_errors  = e
+    # end
     resp_request_id = ''
     resp_request_id = data[:request_id] if data[:request_id].present?
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)

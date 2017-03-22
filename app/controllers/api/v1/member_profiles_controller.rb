@@ -18,12 +18,11 @@ class Api::V1::MemberProfilesController < ApplicationController
   
   def profile_timeline
     # params = {
-    #     "auth_token": "111111111",
-    #     "page": 1,
-    #     "per_page": 10,
-    #     "member_profile_id": 4,
-    #     "filter_type": "video",
-    #     "type": "near_me",
+    #     "auth_token": "1111111111",
+    #     "min_post_date": "2017-03-22 07:56:18",
+    #     "member_profile_id": 1,
+    #     "filter_type": "photo",
+    #     "type": "following",
     #     "latitude":  "23.232323",
     #     "longitude": "23.2323223"
     # }

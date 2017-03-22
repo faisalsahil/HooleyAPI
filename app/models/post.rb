@@ -281,7 +281,7 @@ class Post < ApplicationRecord
     resp_request_id   = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
   end
-
+  # Not in Use
   def self.post_list(data, current_user)
     begin
       data = data.with_indifferent_access
