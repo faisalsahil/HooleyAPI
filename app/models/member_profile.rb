@@ -397,7 +397,7 @@ class MemberProfile < ApplicationRecord
       resp_message = 'error'
       resp_errors  = e
     end
-    open_session    = OpenSession.find_by_user_id_and_media_type(current_user.id, data[:filter_type])
+    open_session    = OpenSession.find_by_user_id_and_media_type(current_user.id, data[:type]) if data[:type].present?
     if open_session.present?
       resp_data     = resp_data.merge!(session_id: open_session.session_id)
     end

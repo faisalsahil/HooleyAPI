@@ -22,7 +22,7 @@ class Api::V1::MemberProfilesController < ApplicationController
     #     "min_post_date": "2017-03-22 09:10:15",
     #     "member_profile_id": 1,
     #     "filter_type": "photo",
-    #     "type": "trending",
+    #     "type": "following",
     #     "latitude":  "23.232323",
     #     "longitude": "23.2323223"
     # }
