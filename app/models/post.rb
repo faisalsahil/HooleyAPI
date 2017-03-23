@@ -498,7 +498,7 @@ class Post < ApplicationRecord
       resp_message = 'Trending list'
       resp_errors  = ''
     rescue Exception => e
-      resp_data    = ''
+      resp_data    = {}
       resp_status  = 0
       paging_data  = ''
       resp_message = 'error'
@@ -539,13 +539,13 @@ class Post < ApplicationRecord
           id: post.id,
           post_title:       post.post_title,
           post_description: post.post_description,
-          is_post_public: post.is_post_public,
-          post_type:      post.post_type,
-          location:       post.location,
-          latitude:       post.latitude,
-          longitude:      post.longitude,
-          likes_count:    post.post_likes.count,
-          comments_count: post.comments.count,
+          is_post_public:   post.is_post_public,
+          post_type:        post.post_type,
+          location:         post.location,
+          latitude:         post.latitude,
+          longitude:        post.longitude,
+          likes_count:      post.likes.count,
+          comments_count:   post.comments.count,
           post_members_counts: post.post_members.count,
           liked_by_me: Like.liked_by_me(post, current_user.profile_id),
           count: post.likes.where(is_like: true, is_deleted: false).count + post.comments.where(is_deleted: false).count,

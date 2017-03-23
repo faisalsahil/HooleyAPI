@@ -23,11 +23,11 @@ class Hashtag < ApplicationRecord
       end
       hash_tags = hash_tags.take(5)
       resp_data = {hash_tags: hash_tags}.as_json
-      resp_status = 1
-      resp_message = 'success'
-      resp_errors = ''
+      resp_status   = 1
+      resp_message  = 'success'
+      resp_errors   = ''
     rescue Exception => e
-      resp_data       = ''
+      resp_data       = {}
       resp_status     = 0
       paging_data     = ''
       resp_message    = 'error'

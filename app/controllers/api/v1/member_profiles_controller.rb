@@ -19,10 +19,10 @@ class Api::V1::MemberProfilesController < ApplicationController
   def profile_timeline
     # params = {
     #     "auth_token": "1111111111",
-    #     "min_post_date": "2017-03-22 07:56:18",
+    #     "min_post_date": "2017-03-22 09:10:15",
     #     "member_profile_id": 1,
     #     "filter_type": "photo",
-    #     "type": "following",
+    #     "type": "trending",
     #     "latitude":  "23.232323",
     #     "longitude": "23.2323223"
     # }
