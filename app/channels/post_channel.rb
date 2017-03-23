@@ -10,7 +10,12 @@ class PostChannel < ApplicationCable::Channel
       sync_comments(current_user, params[:event_id], params[:session_id], 'Event')
     elsif current_user.present? && params[:type].present?
       stream_from "post_channel_#{current_user.id}"
-      newly_created_syncing_posts(current_user, params[:session_id], params[:type])
+      if params[:is_start_sync].present?
+        newly_created_syncing_posts(current_user, params[:session_id], params[:type], params[:is_start_sync])
+      else
+        newly_created_syncing_posts(current_user, params[:session_id], params[:type], false)
+      end
+      
     elsif current_user.present?
       stream_from "post_channel_#{current_user.id}"
     else
@@ -33,17 +38,17 @@ class PostChannel < ApplicationCable::Channel
     stop_all_streams
   end
 
-  def newly_created_syncing_posts(current_user, session_id, type)
+  def newly_created_syncing_posts(current_user, session_id, type, is_start_sync)
     params = {user_id: current_user.id, media_type: type, session_id: session_id}
     open_session = OpenSession.find_by_user_id_and_media_type(current_user.id, type) || OpenSession.new(params)
     open_session.save if open_session.new_record?
     
     if type == AppConstants::FOLLOWING
-      response = Post.newly_created_following_posts(current_user, session_id)
+      response = Post.newly_created_following_posts(current_user, session_id, is_start_sync)
     elsif type == AppConstants::NEAR_ME
-      response = Post.newly_created_nearest_posts(current_user, session_id)
+      response = Post.newly_created_nearest_posts(current_user, session_id, is_start_sync)
     elsif type == AppConstants::TRENDING
-      response = Post.newly_created_nearest_posts(current_user, session_id)
+      response = Post.newly_created_trending_posts(current_user, session_id, is_start_sync)
     end
     PostJob.perform_later response, current_user.id if response.present?
   end

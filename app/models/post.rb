@@ -323,7 +323,7 @@ class Post < ApplicationRecord
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, next_page_exist: next_page_exist, previous_page_exist: previous_page_exist, post_list: true)
   end
 
-  def self.newly_created_following_posts(current_user, session_id)
+  def self.newly_created_following_posts(current_user, session_id, is_start_sync)
     begin
       last_subs_date = current_user.last_subscription_time
       profile        = current_user.profile
@@ -333,7 +333,14 @@ class Post < ApplicationRecord
       post_ids      = PostMember.where(member_profile_id: profile.id).pluck(:post_id)
       posts = Post.where("(member_profile_id IN (?) OR id IN (?)) AND is_deleted = ? OR is_post_public = ?", following_ids, post_ids, false, true).distinct
       
-      if last_subs_date.present? && TimeDifference.between(Time.now, last_subs_date).in_minutes < 30
+      if is_start_sync.present?
+        posts = posts.order("created_at DESC")
+        posts = posts.limit(@@limit)
+        start = 'aaastart_sync'
+        if posts.present?
+          Post.where("created_at < ?", posts.last.created_at).present? ? next_page_exist = true : next_page_exist = false
+        end
+      elsif last_subs_date.present? && TimeDifference.between(Time.now, last_subs_date).in_minutes < 30
         if current_user.following_sync_datetime.present?
           posts = posts.where("created_at > ?", current_user.following_sync_datetime)
           posts = posts.order("created_at DESC")
@@ -397,7 +404,7 @@ class Post < ApplicationRecord
     end
   end
 
-  def self.newly_created_nearest_posts(current_user, session_id)
+  def self.newly_created_nearest_posts(current_user, session_id, is_start_sync)
     begin
       last_subs_date = current_user.last_subscription_time
       profile        = current_user.profile
@@ -405,7 +412,14 @@ class Post < ApplicationRecord
       posts = Post.within(profile.near_event_search, :origin => [profile.latitude, profile.longitude])
       posts = posts.where(is_post_public: true)
       
-      if last_subs_date.present? && TimeDifference.between(Time.now, last_subs_date).in_minutes < 30
+      if is_start_sync.present?
+        posts = posts.order("created_at DESC")
+        posts = posts.limit(@@limit)
+        start = 'start_sync'
+        if posts.present?
+          Post.where("created_at < ?", posts.last.created_at).present? ? next_page_exist = true : next_page_exist = false
+        end
+      elsif last_subs_date.present? && TimeDifference.between(Time.now, last_subs_date).in_minutes < 30
         if current_user.nearme_sync_datetime.present?
           posts = posts.where("created_at > ?", current_user.nearme_sync_datetime)
           posts = posts.order("created_at DESC")
@@ -441,6 +455,87 @@ class Post < ApplicationRecord
       
         resp_data       = posts_array_response(posts, profile, sync_object.sync_token)
         resp_data       = resp_data.merge!(session_id: session_id)
+        paging_data     = {next_page_exist: next_page_exist}
+        resp_status     = 1
+        resp_request_id = ''
+        resp_message    = 'Posts'
+        resp_errors     = ''
+        if start == 'start_sync'
+          JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, start: start, type: 'Sync', paging_data: paging_data)
+        else
+          JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, start: start, type: 'Sync')
+        end
+      else
+        resp_data       = {session_id: session_id}
+        resp_status     = 0
+        resp_request_id = ''
+        resp_message    = 'Posts Not Found'
+        resp_errors     = ''
+        JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
+      end
+    rescue Exception => e
+      resp_data       = {session_id: session_id}
+      resp_status     = 0
+      paging_data     = ''
+      resp_message    = 'error'
+      resp_errors     = e
+      JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
+    end
+  end
+
+  def self.newly_created_trending_posts(current_user, session_id, is_start_sync)
+    begin
+      last_subs_date = current_user.last_subscription_time
+      profile        = current_user.profile
+
+      posts      = Post.order("RANDOM()")
+      posts      = posts.where(is_post_public: true)
+      hash_tags  = Hashtag.order("RANDOM()").order("created_at DESC")
+      
+      if is_start_sync.present?
+        posts = posts.order("created_at DESC")
+        posts = posts.limit(@@limit)
+        start = 'start_sync'
+        if posts.present?
+          Post.where("created_at < ?", posts.last.created_at).present? ? next_page_exist = true : next_page_exist = false
+        end
+      elsif last_subs_date.present? && TimeDifference.between(Time.now, last_subs_date).in_minutes < 30
+        if current_user.trending_sync_datetime.present?
+          posts = posts.where("created_at > ?", current_user.trending_sync_datetime)
+          posts = posts.order("created_at DESC")
+          start = false
+        else
+          posts = posts.order("created_at DESC")
+          posts = posts.limit(@@limit)
+          start = 'start_sync'
+          if posts.present?
+            Post.where("created_at < ?", posts.last.created_at).present? ? next_page_exist = true : next_page_exist = false
+          end
+        end
+      else
+        posts = posts.order("created_at DESC")
+        posts = posts.limit(@@limit)
+        start = 'start_sync'
+        if posts.present?
+          Post.where("created_at < ?", posts.last.created_at).present? ? next_page_exist = true : next_page_exist = false
+        end
+      end
+    
+      # if current_user.trending_sync_datetime.blank?
+      #   current_user.trending_sync_datetime = Time.now
+      #   current_user.save!
+      # end
+    
+      if posts.present?
+        sync_object             = profile.synchronizations.first ||  profile.synchronizations.build
+        sync_object.sync_token  = SecureRandom.uuid
+        sync_object.sync_type   = AppConstants::NEAR_ME
+        sync_object.synced_date = posts.first.created_at
+        sync_object.save!
+      
+        # resp_data       = posts_array_response(posts, profile, sync_object.sync_token)
+        resp_data       = trending_api_loop_response(posts, hash_tags, false, current_user)
+        resp_data       = resp_data.merge!(session_id: session_id, sync_token: sync_object.sync_token)
         paging_data     = {next_page_exist: next_page_exist}
         resp_status     = 1
         resp_request_id = ''
