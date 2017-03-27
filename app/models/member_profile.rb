@@ -21,7 +21,7 @@ class MemberProfile < ApplicationRecord
   
   accepts_nested_attributes_for :user, :profile_interests
 
-  @@limit = 4
+  @@limit = 10
   @@current_profile = nil
 
   acts_as_mappable default_units: :kms, lat_column_name: :latitude, lng_column_name: :longitude
