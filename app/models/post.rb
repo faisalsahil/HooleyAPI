@@ -336,10 +336,7 @@ class Post < ApplicationRecord
       if is_start_sync.present?
         posts = posts.order("created_at DESC")
         posts = posts.limit(@@limit)
-        start = 'aaastart_sync'
-        if posts.present?
-          Post.where("created_at < ?", posts.last.created_at).present? ? next_page_exist = true : next_page_exist = false
-        end
+        start = 'start_sync'
       elsif last_subs_date.present? && TimeDifference.between(Time.now, last_subs_date).in_minutes < 30
         if current_user.following_sync_datetime.present?
           posts = posts.where("created_at > ?", current_user.following_sync_datetime)
@@ -349,23 +346,21 @@ class Post < ApplicationRecord
           posts = posts.order("created_at DESC")
           posts = posts.limit(@@limit)
           start = 'start_sync'
-          if posts.present?
-            Post.where("created_at < ?", posts.last.created_at).present? ? next_page_exist = true : next_page_exist = false
-          end
         end
       else
         posts = posts.order("created_at DESC")
         posts = posts.limit(@@limit)
         start = 'start_sync'
-        if posts.present?
-          Post.where("created_at < ?", posts.last.created_at).present? ? next_page_exist = true : next_page_exist = false
-        end
       end
 
       # if current_user.following_sync_datetime.blank?
       #   current_user.following_sync_datetime = Time.now
       #   current_user.save!
       # end
+      
+      if start == 'start_sync' && posts.present?
+        Post.where("created_at < ?", posts.last.created_at).present? ? next_page_exist = true : next_page_exist = false
+      end
 
       if posts.present?
         sync_object             = profile.synchronizations.first ||  profile.synchronizations.build
@@ -416,9 +411,6 @@ class Post < ApplicationRecord
         posts = posts.order("created_at DESC")
         posts = posts.limit(@@limit)
         start = 'start_sync'
-        if posts.present?
-          Post.where("created_at < ?", posts.last.created_at).present? ? next_page_exist = true : next_page_exist = false
-        end
       elsif last_subs_date.present? && TimeDifference.between(Time.now, last_subs_date).in_minutes < 30
         if current_user.nearme_sync_datetime.present?
           posts = posts.where("created_at > ?", current_user.nearme_sync_datetime)
@@ -428,23 +420,21 @@ class Post < ApplicationRecord
           posts = posts.order("created_at DESC")
           posts = posts.limit(@@limit)
           start = 'start_sync'
-          if posts.present?
-            Post.where("created_at < ?", posts.last.created_at).present? ? next_page_exist = true : next_page_exist = false
-          end
         end
       else
         posts = posts.order("created_at DESC")
         posts = posts.limit(@@limit)
         start = 'start_sync'
-        if posts.present?
-          Post.where("created_at < ?", posts.last.created_at).present? ? next_page_exist = true : next_page_exist = false
-        end
       end
     
       # if current_user.nearme_sync_datetime.blank?
       #   current_user.nearme_sync_datetime = Time.now
       #   current_user.save!
       # end
+
+      if start == 'start_sync' && posts.present?
+        Post.where("created_at < ?", posts.last.created_at).present? ? next_page_exist = true : next_page_exist = false
+      end
     
       if posts.present?
         sync_object             = profile.synchronizations.first ||  profile.synchronizations.build
@@ -496,9 +486,6 @@ class Post < ApplicationRecord
         posts = posts.order("created_at DESC")
         posts = posts.limit(@@limit)
         start = 'start_sync'
-        if posts.present?
-          Post.where("created_at < ?", posts.last.created_at).present? ? next_page_exist = true : next_page_exist = false
-        end
       elsif last_subs_date.present? && TimeDifference.between(Time.now, last_subs_date).in_minutes < 30
         if current_user.trending_sync_datetime.present?
           posts = posts.where("created_at > ?", current_user.trending_sync_datetime)
@@ -508,23 +495,21 @@ class Post < ApplicationRecord
           posts = posts.order("created_at DESC")
           posts = posts.limit(@@limit)
           start = 'start_sync'
-          if posts.present?
-            Post.where("created_at < ?", posts.last.created_at).present? ? next_page_exist = true : next_page_exist = false
-          end
         end
       else
         posts = posts.order("created_at DESC")
         posts = posts.limit(@@limit)
         start = 'start_sync'
-        if posts.present?
-          Post.where("created_at < ?", posts.last.created_at).present? ? next_page_exist = true : next_page_exist = false
-        end
       end
     
       # if current_user.trending_sync_datetime.blank?
       #   current_user.trending_sync_datetime = Time.now
       #   current_user.save!
       # end
+
+      if start == 'start_sync' && posts.present?
+        Post.where("created_at < ?", posts.last.created_at).present? ? next_page_exist = true : next_page_exist = false
+      end
     
       if posts.present?
         sync_object             = profile.synchronizations.first ||  profile.synchronizations.build
