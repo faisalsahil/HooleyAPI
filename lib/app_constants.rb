@@ -33,6 +33,7 @@ module AppConstants
   DISLIKED  = 'Disliked'
   POST      = 'Post'
   EVENT     = 'Event'
+  Event_CREATED = 'created an event near you.'
   MESSAGE_ON_THE_WAY = 'I\'m on the way to attend the event.'
   MESSAGE_REACHED    = 'I\'ve reached at event.'
   MESSAGE_GONE       = 'Going back after attend the event.'

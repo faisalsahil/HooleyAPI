@@ -549,6 +549,28 @@ class Event < ApplicationRecord
       {events: []}.as_json
     end
   end
+  
+  def self.event_creation_notification(event_id, current_user)
+    # begin
+      event = Event.find_by_id(event_id)
+      if event.is_public
+        name  = current_user.username || current_user.first_name || current_user.email
+        alert = name + ' ' + AppConstants::Event_CREATED
+        screen_data = {event_id: event_id}.as_json
+        member_profiles = MemberProfile.within(event.radius, :origin => [event.latitude, event.longitude]).includes(:user)
+        member_profiles && member_profiles.each do |member_profile|
+          if member_profile.is_near_me_event_alert
+            Notification.send_hooly_notification(member_profile.user, alert, AppConstants::EVENT, true, screen_data)
+          end
+        end
+      end
+    # rescue Exception => e
+    #   resp_data       = {}
+    #   resp_status     = 0
+    #   resp_message    = 'error'
+    #   resp_errors     = e
+    # end
+  end
 end
 
 # == Schema Information

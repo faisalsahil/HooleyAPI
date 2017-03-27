@@ -21,10 +21,11 @@ class MemberProfile < ApplicationRecord
   
   accepts_nested_attributes_for :user, :profile_interests
 
-  @@limit = 10
+  @@limit = 4
   @@current_profile = nil
 
-
+  acts_as_mappable default_units: :kms, lat_column_name: :latitude, lng_column_name: :longitude
+  
   pg_search_scope :search_by_name,
     against: :name,
     using: {
@@ -332,7 +333,7 @@ class MemberProfile < ApplicationRecord
   end
 
   def self.profile_timeline(data, current_user)
-    begin
+    # begin
       data         = data.with_indifferent_access
       max_post_date = data[:max_post_date] || Time.now
       min_post_date = data[:min_post_date] || Time.now
@@ -390,13 +391,13 @@ class MemberProfile < ApplicationRecord
       resp_status   = 1
       resp_message  = 'TimeLine'
       resp_errors   = ''
-    rescue Exception => e
-      resp_data    = {}
-      resp_status  = 0
-      paging_data  = ''
-      resp_message = 'error'
-      resp_errors  = e
-    end
+    # rescue Exception => e
+    #   resp_data    = {}
+    #   resp_status  = 0
+    #   paging_data  = ''
+    #   resp_message = 'error'
+    #   resp_errors  = e
+    # end
     open_session    = OpenSession.find_by_user_id_and_media_type(current_user.id, data[:type]) if data[:type].present?
     if open_session.present?
       resp_data     = resp_data.merge!(session_id: open_session.session_id)

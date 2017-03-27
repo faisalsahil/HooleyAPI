@@ -1,0 +1,15 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  alert: MyString
+  badge: 1
+  screen: MyString
+  screen-data: 
+  user_id: 
+
+two:
+  alert: MyString
+  badge: 1
+  screen: MyString
+  screen-data: 
+  user_id: 

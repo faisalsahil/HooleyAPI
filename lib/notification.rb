@@ -21,7 +21,7 @@ module Notification
               screen_data: screen_data,
               user:{
                   id: 1,
-                  username: user.username ,
+                  username: user.username || user.first_name || user.last_name || user.email,
                   profile: {
                       id: user.profile_id,
                       photo: user.profile.photo
@@ -59,9 +59,9 @@ module Notification
           notification = app.push_notifications
         end
       else
-        puts "XX"*20
+        puts "XX"*10
         puts "Notification not send"
-        puts "XX"*20
+        puts "XX"*10
       end
     # rescue => e
     #   puts e.inspect

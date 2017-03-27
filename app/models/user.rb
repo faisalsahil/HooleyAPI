@@ -59,7 +59,8 @@ class User < ApplicationRecord
         user_session.session_status = 'open'
         user_session.save!
 
-        # user.current_sign_in_at     = Time.now
+        user.device_type    = data[:user_session][:device_type]
+        user.device_token   = data[:user_session][:device_token]
         user.following_sync_datetime= nil
         user.nearme_sync_datetime   = nil
         user.trending_sync_datetime = nil

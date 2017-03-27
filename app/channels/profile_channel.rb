@@ -40,6 +40,7 @@ class ProfileChannel < ApplicationCable::Channel
     if event_id != 0
       Event.event_sync_to_members(event_id, current_user)
     end
+    Event.event_creation_notification(event_id, current_user)
   end
 
   def show_event(data)
