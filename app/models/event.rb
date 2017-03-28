@@ -17,7 +17,7 @@ class Event < ApplicationRecord
   has_many   :comments,         as: :commentable, dependent: :destroy
   has_many   :posts,                              dependent: :destroy
   
-  validates_presence_of :event_name, :start_date, :end_date, :location, :longitude, :latitude, :category_id
+  validates_presence_of :event_name, :start_date, :end_date, :location, :longitude, :latitude, :category_id, :member_profile_id
   accepts_nested_attributes_for :event_members, :event_co_hosts, :event_attachments, :hashtags
   
   @@limit           = 3

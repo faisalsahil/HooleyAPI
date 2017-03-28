@@ -9,7 +9,7 @@ class PostChannel < ApplicationCable::Channel
       stream_from "event_#{params[:event_id]}"
       sync_comments(current_user, params[:event_id], params[:session_id], 'Event')
     elsif current_user.present? && params[:type].present?
-      stream_from "post_channel_#{current_user.id}"
+      stream_from "post_channel_#{params[:type]}_#{current_user.id}"
       if params[:is_start_sync].present?
         newly_created_syncing_posts(current_user, params[:session_id], params[:type], params[:is_start_sync])
       else
@@ -39,9 +39,10 @@ class PostChannel < ApplicationCable::Channel
   end
 
   def newly_created_syncing_posts(current_user, session_id, type, is_start_sync)
-    params = {user_id: current_user.id, media_type: type, session_id: session_id}
+    params = {user_id: current_user.id, media_type: type}
     open_session = OpenSession.find_by_user_id_and_media_type(current_user.id, type) || OpenSession.new(params)
-    open_session.save if open_session.new_record?
+    open_session.session_id = session_id
+    open_session.save
     
     if type == AppConstants::FOLLOWING
       response = Post.newly_created_following_posts(current_user, session_id, is_start_sync)
@@ -50,19 +51,21 @@ class PostChannel < ApplicationCable::Channel
     elsif type == AppConstants::TRENDING
       response = Post.newly_created_trending_posts(current_user, session_id, is_start_sync)
     end
-    PostJob.perform_later response, current_user.id if response.present?
+    PostJob.perform_later response, current_user.id, nil, type if response.present?
   end
 
   def sync_comments(current_user, object_id, session_id, type)
     if type == AppConstants::POST
-      params = {user_id: current_user.id, media_id: object_id, media_type: AppConstants::POST, session_id: session_id}
+      params = {user_id: current_user.id, media_id: object_id, media_type: AppConstants::POST}
       open_session = OpenSession.find_by_user_id_and_media_id_and_media_type(current_user.id, object_id, AppConstants::POST) || OpenSession.new(params)
-      open_session.save if open_session.new_record?
+      open_session.session_id = session_id
+      open_session.save
       data  = { post: { id: object_id } }
     else
-      params = {user_id: current_user.id, media_id: object_id, media_type: AppConstants::EVENT, session_id: session_id}
+      params = {user_id: current_user.id, media_id: object_id, media_type: AppConstants::EVENT}
       open_session = OpenSession.find_by_user_id_and_media_id_and_media_type(current_user.id, object_id, AppConstants::EVENT) || OpenSession.new(params)
-      open_session.save if open_session.new_record?
+      open_session.session_id = session_id
+      open_session.save
       data  = { event: { id: object_id } }
     end
     response = Comment.comments_list(data, current_user, true, session_id)
