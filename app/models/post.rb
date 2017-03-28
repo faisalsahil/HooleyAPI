@@ -327,7 +327,7 @@ class Post < ApplicationRecord
     begin
       last_subs_date = current_user.last_subscription_time
       profile        = current_user.profile
-      
+      @limit         = 20
       following_ids = profile.member_followings.where(following_status: AppConstants::ACCEPTED).pluck(:following_profile_id)
       following_ids << profile.id
       post_ids      = PostMember.where(member_profile_id: profile.id).pluck(:post_id)
@@ -335,7 +335,7 @@ class Post < ApplicationRecord
       
       if is_start_sync.present?
         posts = posts.order("created_at DESC")
-        posts = posts.limit(@@limit)
+        posts = posts.limit(@limit)
         start = 'start_sync'
       elsif last_subs_date.present? && TimeDifference.between(Time.now, last_subs_date).in_minutes < 30
         if current_user.following_sync_datetime.present?
@@ -344,12 +344,12 @@ class Post < ApplicationRecord
           start = false
         else
           posts = posts.order("created_at DESC")
-          posts = posts.limit(@@limit)
+          posts = posts.limit(@limit)
           start = 'start_sync'
         end
       else
         posts = posts.order("created_at DESC")
-        posts = posts.limit(@@limit)
+        posts = posts.limit(@limit)
         start = 'start_sync'
       end
 
@@ -403,13 +403,13 @@ class Post < ApplicationRecord
     begin
       last_subs_date = current_user.last_subscription_time
       profile        = current_user.profile
-      
+      @limit         = 20
       posts = Post.within(profile.near_event_search, :origin => [profile.latitude, profile.longitude])
       posts = posts.where(is_post_public: true)
       
       if is_start_sync.present?
         posts = posts.order("created_at DESC")
-        posts = posts.limit(@@limit)
+        posts = posts.limit(@limit)
         start = 'start_sync'
       elsif last_subs_date.present? && TimeDifference.between(Time.now, last_subs_date).in_minutes < 30
         if current_user.nearme_sync_datetime.present?
@@ -418,12 +418,12 @@ class Post < ApplicationRecord
           start = false
         else
           posts = posts.order("created_at DESC")
-          posts = posts.limit(@@limit)
+          posts = posts.limit(@limit)
           start = 'start_sync'
         end
       else
         posts = posts.order("created_at DESC")
-        posts = posts.limit(@@limit)
+        posts = posts.limit(@limit)
         start = 'start_sync'
       end
     
@@ -477,14 +477,14 @@ class Post < ApplicationRecord
     begin
       last_subs_date = current_user.last_subscription_time
       profile        = current_user.profile
-
+      @limit         = 20
       posts      = Post.order("RANDOM()")
       posts      = posts.where(is_post_public: true)
       hash_tags  = Hashtag.order("RANDOM()").order("created_at DESC")
       
       if is_start_sync.present?
         posts = posts.order("created_at DESC")
-        posts = posts.limit(@@limit)
+        posts = posts.limit(@limit)
         start = 'start_sync'
       elsif last_subs_date.present? && TimeDifference.between(Time.now, last_subs_date).in_minutes < 30
         if current_user.trending_sync_datetime.present?
@@ -493,12 +493,12 @@ class Post < ApplicationRecord
           start = false
         else
           posts = posts.order("created_at DESC")
-          posts = posts.limit(@@limit)
+          posts = posts.limit(@limit)
           start = 'start_sync'
         end
       else
         posts = posts.order("created_at DESC")
-        posts = posts.limit(@@limit)
+        posts = posts.limit(@limit)
         start = 'start_sync'
       end
     

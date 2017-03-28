@@ -102,13 +102,12 @@ class Api::V1::EventsController < ApplicationController
   
   def event_posts
     # params = {
-    #   "auth_token": "111111111",
-    #   "min_post_date": "2017-03-21T09:50:02.036Z"
-    #   "per_page":10,
-    #   "page":1,
-    #   "event_id": 13,
+    #   "auth_token": "1111111111",
+    #   "max_post_date": "2017-03-22 09:10:15",
+    #   "event_id": 1,
     #   "type": "my_media",
     #   # "type": "my_media/friends/liked/all",
+    #   "filter_type": "photo"
     #   # "filter_type": "video/photo"
     # }
     user_session = UserSession.find_by_auth_token(params[:auth_token])

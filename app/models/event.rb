@@ -20,7 +20,7 @@ class Event < ApplicationRecord
   validates_presence_of :event_name, :start_date, :end_date, :location, :longitude, :latitude, :category_id, :member_profile_id
   accepts_nested_attributes_for :event_members, :event_co_hosts, :event_attachments, :hashtags
   
-  @@limit           = 3
+  @@limit           = 10
   @@current_profile = nil
 
   acts_as_mappable default_units: :kms, lat_column_name: :latitude, lng_column_name: :longitude
@@ -235,8 +235,11 @@ class Event < ApplicationRecord
   
   def self.event_posts(data, current_user)
     begin
-      per_page = (data[:per_page] || @@limit).to_i
-      page     = (data[:page] || 1).to_i
+      # per_page = (data[:per_page] || @@limit).to_i
+      # page     = (data[:page] || 1).to_i
+      max_post_date = data[:max_post_date] || Time.now
+      min_post_date = data[:min_post_date] || Time.now
+      
       member_profile = current_user.profile
       event          = Event.find_by_id(data[:event_id])
       if event.present?
@@ -257,13 +260,30 @@ class Event < ApplicationRecord
         if data[:type].present? && data[:type] ==  AppConstants::ALL
           posts  =  event.posts
         end
+
+        if data[:max_post_date].present?
+          posts = posts.where("created_at > ?", max_post_date)
+        elsif data[:min_post_date].present?
+          posts = posts.where("created_at < ?", min_post_date)
+        end
+        posts = posts.order("created_at DESC")
+        posts = posts.limit(@@limit)
         
         if data[:filter_type].present?
-          posts = posts.joins(:post_attachments).where(post_attachments: {attachment_type: data[:filter_type]})
+          post_ids = posts.pluck(:id)
+          posts    = Post.joins(:post_attachments).where(id: post_ids, post_attachments: {attachment_type: data[:filter_type]})
+          posts = posts.order("created_at DESC")
+          # posts    = posts.joins(:post_attachments).where(post_attachments: {attachment_type: data[:filter_type]})
+        end
+
+        if posts.present?
+          Post.where("created_at > ?", posts.first.created_at).present? ? previous_page_exist = true : previous_page_exist = false
+          Post.where("created_at < ?", posts.last.created_at).present? ? next_page_exist = true : next_page_exist = false
         end
         
-        posts           =  posts.page(page.to_i).per_page(per_page.to_i)
-        paging_data     =  JsonBuilder.get_paging_data(page, per_page, posts)
+        # posts           =  posts.page(page.to_i).per_page(per_page.to_i)
+        # paging_data     =  JsonBuilder.get_paging_data(page, per_page, posts)
+        paging_data     = {previous_page_exist: previous_page_exist, next_page_exist: next_page_exist}
         resp_data       =  Post.posts_array_response(posts, current_user.profile)
         resp_status     = 1
         resp_message    = 'success'
