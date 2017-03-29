@@ -404,9 +404,10 @@ class Post < ApplicationRecord
       last_subs_date = current_user.last_subscription_time
       profile        = current_user.profile
       @limit         = 20
-      posts = Post.within(profile.near_event_search, :origin => [profile.latitude, profile.longitude])
-      posts = posts.where(is_post_public: true)
-      
+      # posts = Post.within(profile.near_event_search, :origin => [profile.latitude, profile.longitude])
+      event_ids = Event.within(profile.near_event_search, :origin => [profile.latitude, profile.longitude]).pluck(:id)
+      posts     = Post.where(event_id: event_ids, is_deleted: false, is_post_public: true)
+    
       if is_start_sync.present?
         posts = posts.order("created_at DESC")
         posts = posts.limit(@limit)

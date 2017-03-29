@@ -333,7 +333,7 @@ class MemberProfile < ApplicationRecord
   end
 
   def self.profile_timeline(data, current_user)
-    # begin
+    begin
       data         = data.with_indifferent_access
       max_post_date = data[:max_post_date] || Time.now
       min_post_date = data[:min_post_date] || Time.now
@@ -348,8 +348,10 @@ class MemberProfile < ApplicationRecord
             latitude  = profile.latitude
             longitude = profile.longitude
           end
-          posts = Post.within(profile.near_event_search, :origin => [latitude, longitude])
-          posts = posts.where(is_deleted: false, is_post_public: true)
+          event_ids = Event.within(profile.near_event_search, :origin => [latitude, longitude]).pluck(:id)
+          # posts = Post.within(profile.near_event_search, :origin => [latitude, longitude])
+          # posts = posts.where(is_deleted: false, is_post_public: true)
+          posts = Post.where(event_id: event_ids, is_deleted: false, is_post_public: true)
         end
         if data[:type] == AppConstants::FOLLOWING
           following_ids = profile.member_followings.where(following_status: AppConstants::ACCEPTED).pluck(:following_profile_id)
@@ -391,13 +393,13 @@ class MemberProfile < ApplicationRecord
       resp_status   = 1
       resp_message  = 'TimeLine'
       resp_errors   = ''
-    # rescue Exception => e
-    #   resp_data    = {}
-    #   resp_status  = 0
-    #   paging_data  = ''
-    #   resp_message = 'error'
-    #   resp_errors  = e
-    # end
+    rescue Exception => e
+      resp_data    = {}
+      resp_status  = 0
+      paging_data  = ''
+      resp_message = 'error'
+      resp_errors  = e
+    end
     open_session    = OpenSession.find_by_user_id_and_media_type(current_user.id, data[:type]) if data[:type].present?
     if open_session.present?
       resp_data     = resp_data.merge!(session_id: open_session.session_id)
