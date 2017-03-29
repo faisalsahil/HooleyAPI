@@ -420,27 +420,26 @@ class MemberProfile < ApplicationRecord
           posts = posts.limit(@limit)
           start = 'start_sync'
           
-          if start == 'start_sync' && posts.present?
-            Post.where("created_at < ?", posts.last.created_at).present? ? next_page_exist = true : next_page_exist = false
-          end
-          
-          sync_object             = profile.synchronizations.first ||  profile.synchronizations.build
-          sync_object.sync_token  = SecureRandom.uuid
-          sync_object.sync_type   = AppConstants::NEAR_ME
-          sync_object.synced_date = posts.first.created_at
-          sync_object.save!
-
-          resp_data       = Post.posts_array_response(posts, profile, sync_object.sync_token)
-          resp_data       = resp_data.merge!(session_id: open_session.session_id)
-          paging_data     = {next_page_exist: next_page_exist}
-          resp_status     = 1
-          resp_request_id = ''
-          resp_message    = 'Posts'
-          resp_errors     = ''
-          if start == 'start_sync'
-            JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, start: start, type: 'Sync', paging_data: paging_data)
-          else
-            JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, start: start, type: 'Sync')
+          if posts.present?
+            if start == 'start_sync' && posts.present?
+              Post.where("created_at < ?", posts.last.created_at).present? ? next_page_exist = true : next_page_exist = false
+            end
+            sync_object             = profile.synchronizations.first ||  profile.synchronizations.build
+            sync_object.sync_token  = SecureRandom.uuid
+            sync_object.sync_type   = AppConstants::NEAR_ME
+            sync_object.synced_date = posts.first.created_at
+            sync_object.save!
+  
+            resp_data       = Post.posts_array_response(posts, profile, sync_object.sync_token)
+            resp_data       = resp_data.merge!(session_id: open_session.session_id)
+            paging_data     = {next_page_exist: next_page_exist}
+            # Broadcast here
+            resp_status     = 1
+            resp_request_id = ''
+            resp_message    = 'Posts'
+            resp_errors     = ''
+            response        = JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, start: start, type: 'Sync', paging_data: paging_data)
+            PostJob.perform_later response, current_user.id, nil, 'near_me' if response.present?
           end
         end
         resp_data       = {}

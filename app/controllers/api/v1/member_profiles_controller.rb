@@ -52,10 +52,10 @@ class Api::V1::MemberProfilesController < ApplicationController
 
   def update_user_location
     # params = {
-    #     "auth_token":  "111111111",
+    #     "auth_token":  "1111111111",
     #     "member_profile": {
-    #         "latitude":  44.44,
-    #         "longitude": 555.555
+    #         "latitude":  31.548295,
+    #         "longitude":74.380285
     #     }
     # }
   
