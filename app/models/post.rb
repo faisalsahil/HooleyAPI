@@ -518,8 +518,8 @@ class Post < ApplicationRecord
         sync_object.synced_date = posts.first.created_at
         sync_object.save!
       
-        # resp_data       = posts_array_response(posts, profile, sync_object.sync_token)
-        resp_data       = trending_api_loop_response(posts, hash_tags, false, current_user)
+        resp_data       = posts_array_response(posts, profile, sync_object.sync_token)
+        # resp_data       = trending_api_loop_response(posts, hash_tags, false, current_user)
         resp_data       = resp_data.merge!(session_id: session_id, sync_token: sync_object.sync_token)
         paging_data     = {next_page_exist: next_page_exist}
         resp_status     = 1
@@ -675,10 +675,10 @@ class Post < ApplicationRecord
       response = resp_array.flatten
       {dicsover_list: response}.as_json
     else
-      resp_array << posts_array.take(5)
-      resp_array << hash_tags_array.take(2)
+      resp_array << posts_array.take(10)
+      # resp_array << hash_tags_array.take(2)
       response = resp_array.flatten.sort_by { |hsh| hsh[:count] }.reverse
-      {posts: response}.as_json
+      {trending: response}.as_json
     end
   end
 
