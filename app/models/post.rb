@@ -18,7 +18,7 @@ class Post < ApplicationRecord
 
   accepts_nested_attributes_for  :post_attachments, :post_members, :post_users
 
-  acts_as_mappable default_units: :kms, lat_column_name: :latitude, lng_column_name: :longitude
+  acts_as_mappable default_units: :miles, lat_column_name: :latitude, lng_column_name: :longitude
 
   validates :is_post_public, inclusion: {in: [true, false]}
   validates_presence_of :event_id, presence: true

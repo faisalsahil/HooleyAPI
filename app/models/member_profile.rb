@@ -24,7 +24,7 @@ class MemberProfile < ApplicationRecord
   @@limit = 10
   @@current_profile = nil
 
-  acts_as_mappable default_units: :kms, lat_column_name: :latitude, lng_column_name: :longitude
+  acts_as_mappable default_units: :miles, lat_column_name: :latitude, lng_column_name: :longitude
   
   pg_search_scope :search_by_name,
     against: :name,
