@@ -74,19 +74,31 @@ class MemberFollowing < ApplicationRecord
           resp_message = 'Request sent.'
         end
         member_following.save!
-
+        # Make friend in two way
         new_following = MemberFollowing.new
         new_following.member_profile_id    = member_following.following_profile_id
         new_following.following_profile_id = member_following.member_profile_id
         new_following.following_status     = member_following.following_status
         new_following.save!
-        
         resp_status = 1
         resp_errors = ''
       else
-        member_following.following_status = AppConstants::PENDING
-        member_following.is_deleted = false
-        member_following.save!
+        if following_to_profile && following_to_profile.is_profile_public
+          member_following.following_status = AppConstants::ACCEPTED
+          member_following.is_deleted = false
+          member_following.save!
+
+          following_to_profile = MemberFollowing.find_by_member_profile_id_and_following_profile_id(data[:member_following][:following_profile_id], member_profile.id)
+          following_to_profile.member_profile_id    = member_following.following_profile_id
+          following_to_profile.following_profile_id = member_following.member_profile_id
+          following_to_profile.following_status     = member_following.following_status
+          following_to_profile.is_deleted           = false
+          following_to_profile.save!
+        else
+          member_following.following_status = AppConstants::PENDING
+          member_following.is_deleted = false
+          member_following.save!
+        end
         resp_message = 'Following Request Submitted.'
         resp_status  = 1
         resp_errors  = ''
@@ -125,7 +137,7 @@ class MemberFollowing < ApplicationRecord
         resp_status     = 0
         paging_data     = nil
         resp_message    = 'error'
-        resp_errors     = 'You have not pending request.'
+        resp_errors     = 'You have no pending request.'
       end
     rescue Exception => e
       resp_data       = {}
