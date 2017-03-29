@@ -678,7 +678,7 @@ class Post < ApplicationRecord
       resp_array << posts_array.take(5)
       resp_array << hash_tags_array.take(2)
       response = resp_array.flatten.sort_by { |hsh| hsh[:count] }.reverse
-      {trending_list: response}.as_json
+      {posts: response}.as_json
     end
   end
 
