@@ -380,8 +380,8 @@ class MemberProfile < ApplicationRecord
       posts = posts.limit(@@limit)
       
       if posts.present?
-        Post.where("created_at > ?", posts.first.created_at).present? ? previous_page_exist = true : previous_page_exist = false
-        Post.where("created_at < ?", posts.last.created_at).present? ? next_page_exist = true : next_page_exist = false
+        Post.where("created_at > ?", posts.first.created_at, member_profile_id: profile.id).present? ? previous_page_exist = true : previous_page_exist = false
+        Post.where("created_at < ?", posts.last.created_at,  member_profile_id: profile.id).present? ? next_page_exist = true : next_page_exist = false
       end
       
       paging_data    = {next_page_exist: next_page_exist, previous_page_exist: previous_page_exist}
