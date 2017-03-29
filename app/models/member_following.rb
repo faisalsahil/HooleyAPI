@@ -74,6 +74,13 @@ class MemberFollowing < ApplicationRecord
           resp_message = 'Request sent.'
         end
         member_following.save!
+
+        new_following = MemberFollowing.new
+        new_following.member_profile_id    = member_following.following_profile_id
+        new_following.following_profile_id = member_following.member_profile_id
+        new_following.following_status     = member_following.following_status
+        new_following.save!
+        
         resp_status = 1
         resp_errors = ''
       else

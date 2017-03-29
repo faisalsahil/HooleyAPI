@@ -341,12 +341,12 @@ class MemberProfile < ApplicationRecord
       profile      = MemberProfile.find_by_id(data[:member_profile_id])
       if data[:type].present?
         if data[:type] == AppConstants::NEAR_ME
-          if profile.latitude.present?
-            latitude  = profile.latitude
-            longitude = profile.longitude
-          else
+          if data[:latitude].present? && data[:longitude].present?
             latitude  = data[:latitude]
             longitude = data[:longitude]
+          else
+            latitude  = profile.latitude
+            longitude = profile.longitude
           end
           posts = Post.within(profile.near_event_search, :origin => [latitude, longitude])
           posts = posts.where(is_deleted: false, is_post_public: true)
@@ -412,6 +412,16 @@ class MemberProfile < ApplicationRecord
       data    = data.with_indifferent_access
       profile = current_user.profile
       if profile.update_attributes(data[:member_profile])
+        open_session    = OpenSession.find_by_user_id_and_media_type(current_user.id, AppConstants::NEAR_ME)
+        if open_session.present?
+          posts = Post.within(profile.near_event_search, :origin => [profile.latitude, profile.longitude])
+          posts = posts.where(is_post_public: true)
+          posts = posts.order("created_at DESC")
+          posts = posts.limit(@limit)
+          start = 'start_sync'
+          
+          
+        end
         resp_data       = {}
         resp_status     = 1
         resp_message    = 'success'
