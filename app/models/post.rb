@@ -57,7 +57,7 @@ class Post < ApplicationRecord
 
   def post_response
     post = self.as_json(
-        only: [:id, :post_title, :post_description, :datetime, :post_datetime, :is_post_public, :post_type, :location, :latitude, :longitude],
+        only: [:id, :post_title, :post_description, :datetime, :post_datetime, :is_post_public, :post_type, :location, :latitude, :longitude, :created_at, :updated_at],
         methods: [:likes_count, :comments_count, :post_members_counts],
         include: {
             member_profile: {
@@ -686,7 +686,7 @@ class Post < ApplicationRecord
   def self.posts_array_response(post_array, profile, sync_token=nil)
     if post_array.present?
       posts = post_array.to_xml(
-          only: [:id, :post_title, :event_id, :post_description, :datetime, :is_post_public, :is_deleted, :created_at, :updated_at, :post_type, :location, :latitude, :longitude],
+          only: [:id, :post_title, :event_id, :post_description, :is_post_public, :is_deleted, :created_at, :updated_at, :post_type, :location, :latitude, :longitude],
           methods: [:likes_count, :comments_count],
           :procs => Proc.new { |options, post|
             options[:builder].tag!('liked_by_me', Like.liked_by_me(post, profile.id))
