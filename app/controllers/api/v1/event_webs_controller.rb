@@ -2,10 +2,11 @@ class Api::V1::EventWebsController < Api::V1::ApiProtectedController
   
   # calling from web
   def index
+    user_session = UserSession.find_by_auth_token(params[:auth_token])
     events       =  Event.all
     events       =  events.page(params[:page].to_i).per_page(params[:per_page].to_i)
     paging_data  = get_paging_data(params[:page], params[:per_page], events)
-    resp_data    = Event.events_response(events)
+    resp_data    = Event.events_response(events, user_session.user)
     resp_status  = 1
     resp_message = 'Success'
     resp_errors  = ''

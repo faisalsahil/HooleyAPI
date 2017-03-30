@@ -87,7 +87,7 @@ class Api::V1::EventsController < ApplicationController
     #     "latitude": "31.556216",
     #     "longitude": "74.294954",
     #     "category_id": 1,
-    #     "is_paid": true
+    #     "event_type": 'free/paid/all'
     # }
 
     user_session = UserSession.find_by_auth_token(params[:auth_token])

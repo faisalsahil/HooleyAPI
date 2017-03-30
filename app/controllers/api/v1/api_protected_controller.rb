@@ -143,7 +143,7 @@ class Api::V1::ApiProtectedController < ApplicationController
 
           if ApiAuth.authentic?(request, user_session.user.id.to_s)
             # user_session = UserSession.new(user)
-
+            current_user = user_session.user
             if user_session.save
               my_logger.info("SESSION CREATED AND LOGGED IN")
               my_logger.info("")

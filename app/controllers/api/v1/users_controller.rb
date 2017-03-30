@@ -58,7 +58,7 @@ class Api::V1::UsersController < Api::V1::ApiProtectedController
       events       =  member_profile.events
       events       =  events.page(params[:page].to_i).per_page(params[:per_page].to_i)
       paging_data  =  get_paging_data(params[:page], params[:per_page], events)
-      resp_data    =  Event.events_response(events)
+      resp_data    =  Event.events_response(events,member_profile.user)
       resp_status  = 1
       resp_message = 'Success'
       resp_errors  = ''

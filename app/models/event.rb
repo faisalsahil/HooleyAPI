@@ -223,10 +223,10 @@ class Event < ApplicationRecord
     if data[:category_id].present?
       events = events.where(category_id: data[:category_id])
     end
-    if data[:is_paid].present?
-      if data[:is_paid] == 'free'
+    if data[:event_type].present?
+      if data[:event_type] == 'free'
         events = events.where(is_paid: false)
-      elsif data[:is_paid] == 'paid'
+      elsif data[:event_type] == 'paid'
         events = events.where(is_paid: true)
       end
     end
@@ -509,6 +509,7 @@ class Event < ApplicationRecord
     if events.present?
       events = events.to_xml(
           only:[:id, :event_name, :member_profile_id, :location, :latitude, :longitude, :radius, :event_details, :is_friends_allowed, :is_public, :is_paid, :category_id, :event_type, :start_date, :end_date, :created_at, :updated_at, :custom_event, :message_from_host],
+          methods:[:post_count],
           :procs => Proc.new { |options, event|
             options[:builder].tag!('is_bookmarked',   EventBookmark.is_bookmarked(event, current_user.profile_id))
             options[:builder].tag!('is_registered',   EventMember.is_registered(event, current_user.profile_id))
