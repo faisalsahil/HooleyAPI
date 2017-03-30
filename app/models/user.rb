@@ -157,12 +157,13 @@ class User < ApplicationRecord
       data         = data.with_indifferent_access
       user_session = UserSession.find_by_auth_token(data[:user_session][:token])
       if user_session.present?
+        user_session.auth_token     = nil
         user_session.session_status = 'closed'
         user_session.save!
       end
-      user.following_sync_datetime= nil
-      user.nearme_sync_datetime   = nil
-      user.trending_sync_datetime = nil
+      current_user.following_sync_datetime= nil
+      current_user.nearme_sync_datetime   = nil
+      current_user.trending_sync_datetime = nil
       current_user.save!
       resp_status     = 1
       resp_message    = 'Logout successful.'
