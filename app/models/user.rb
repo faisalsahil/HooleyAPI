@@ -49,42 +49,48 @@ class User < ApplicationRecord
       user = User.find_by_phone(data[:user][:phone])
     end
     device_type = data[:user_session][:device_type]
-    if user && !user.is_deleted
-      if user && user.valid_password?(data[:user][:password])
-      if user.profile_type == MEMBER && (device_type == DEVICE_IOS || device_type == DEVICE_ANDR || device_type == DEVICE_WEB) || (user.profile_type == ADMIN && device_type == DEVICE_WEB)
+    if user && user.valid_password?(data[:user][:password])
+      if !user.is_deleted
+        if user.profile_type == MEMBER && (device_type == DEVICE_IOS || device_type == DEVICE_ANDR || device_type == DEVICE_WEB) || (user.profile_type == ADMIN && device_type == DEVICE_WEB)
 
-        user_sessions = UserSession.where("device_uuid = ? AND user_id != ?", data[:user_session][:device_uuid], user.id)
-        user_sessions.destroy_all if user_sessions.present?
-        user_session                = user.user_sessions.where(device_uuid: data[:user_session][:device_uuid]).try(:first) || user.user_sessions.build(data[:user_session])
-        user_session.auth_token     = SecureRandom.hex(100)
-        user_session.session_status = 'open'
-        user_session.save!
+      user_sessions = UserSession.where("device_uuid = ? AND user_id != ?", data[:user_session][:device_uuid], user.id)
+      user_sessions.destroy_all if user_sessions.present?
+      user_session                = user.user_sessions.where(device_uuid: data[:user_session][:device_uuid]).try(:first) || user.user_sessions.build(data[:user_session])
+      user_session.auth_token     = SecureRandom.hex(100)
+      user_session.session_status = 'open'
+      user_session.save!
 
-        user.device_type    = data[:user_session][:device_type]
-        user.device_token   = data[:user_session][:device_token]
-        user.following_sync_datetime= nil
-        user.nearme_sync_datetime   = nil
-        user.trending_sync_datetime = nil
-        user.last_subscription_time = nil
-        user.save!
-        # destroy open sessions of post/event
-        open_sessions = OpenSession.where(user_id: user.id)
-        open_sessions.destroy_all if open_sessions.present?
-        # ==============
-        
-        if user.profile_type == ADMIN
-          resp_data = user.profile.admin_profile(user_session.auth_token)
-        else
-          resp_data = user.profile.member_profile(user_session.auth_token)
+      user.device_type    = data[:user_session][:device_type]
+      user.device_token   = data[:user_session][:device_token]
+      user.following_sync_datetime= nil
+      user.nearme_sync_datetime   = nil
+      user.trending_sync_datetime = nil
+      user.last_subscription_time = nil
+      user.save!
+      # destroy open sessions of post/event
+      open_sessions = OpenSession.where(user_id: user.id)
+      open_sessions.destroy_all if open_sessions.present?
+      # ==============
+      
+      if user.profile_type == ADMIN
+        resp_data = user.profile.admin_profile(user_session.auth_token)
+      else
+        resp_data = user.profile.member_profile(user_session.auth_token)
+      end
+      resp_status  = 1
+      resp_message = 'User Profile'
+      resp_errors  = ''
+    else
+      resp_data    = {}
+      resp_status  = 0
+      resp_message = 'Errors'
+      resp_errors  = 'You are not allowed to sign in'
         end
-        resp_status  = 1
-        resp_message = 'User Profile'
-        resp_errors  = ''
       else
         resp_data    = {}
         resp_status  = 0
         resp_message = 'Errors'
-        resp_errors  = 'You are not allowed to sign in'
+        resp_errors  = 'Your account is blocked. Please contact with admin.'
       end
     else
       resp_data    = {}
@@ -92,12 +98,7 @@ class User < ApplicationRecord
       resp_message = 'Errors'
       resp_errors  = 'Either your email or password is incorrect'
     end
-    else
-      resp_data    = {}
-      resp_status  = 0
-      resp_message = 'Errors'
-      resp_errors  = 'Your account is blocked. Please contact with admin.'
-    end
+    
     resp_request_id = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
   end
