@@ -508,7 +508,7 @@ class Event < ApplicationRecord
   def self.events_response(events, current_user, sync_token=nil)
     if events.present?
       events = events.to_xml(
-          only:[:id, :event_name, :member_profile_id, :location, :latitude, :longitude, :radius, :event_details, :is_friends_allowed, :is_public, :is_paid, :category_id, :event_type, :start_date, :end_date, :created_at, :updated_at, :custom_event, :message_from_host],
+          only:[:id, :event_name, :member_profile_id, :location, :latitude, :longitude, :radius, :event_details, :is_friends_allowed, :is_public, :is_paid, :category_id, :event_type, :start_date, :end_date, :created_at, :updated_at, :custom_event, :message_from_host, :is_deleted],
           methods:[:post_count],
           :procs => Proc.new { |options, event|
             options[:builder].tag!('is_bookmarked',   EventBookmark.is_bookmarked(event, current_user.profile_id))

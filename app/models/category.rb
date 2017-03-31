@@ -1,7 +1,11 @@
 class Category < ApplicationRecord
-  
+  include AppConstants
   def self.get_categories(data, current_user)
-    categories = Category.all
+    if current_user.profile_type =  AppConstants::ADMIN
+      categories = Category.all
+    else
+      categories = Category.where(is_deleted: false)
+    end
     categories = categories.as_json(
                only: [:id, :name, :is_deleted]
     )

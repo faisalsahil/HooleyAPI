@@ -49,7 +49,8 @@ class User < ApplicationRecord
       user = User.find_by_phone(data[:user][:phone])
     end
     device_type = data[:user_session][:device_type]
-    if user && user.valid_password?(data[:user][:password])
+    if user && !user.is_deleted
+      if user && user.valid_password?(data[:user][:password])
       if user.profile_type == MEMBER && (device_type == DEVICE_IOS || device_type == DEVICE_ANDR || device_type == DEVICE_WEB) || (user.profile_type == ADMIN && device_type == DEVICE_WEB)
 
         user_sessions = UserSession.where("device_uuid = ? AND user_id != ?", data[:user_session][:device_uuid], user.id)
@@ -91,7 +92,12 @@ class User < ApplicationRecord
       resp_message = 'Errors'
       resp_errors  = 'Either your email or password is incorrect'
     end
-
+    else
+      resp_data    = {}
+      resp_status  = 0
+      resp_message = 'Errors'
+      resp_errors  = 'Your account is blocked. Please contact with admin.'
+    end
     resp_request_id = data[:request_id]
     JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
   end

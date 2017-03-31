@@ -22,7 +22,7 @@ class Api::V1::UserSessionsController < ApplicationController
   def login
     # params = {
     #     "user":{
-    #         "email":"test1@gmail.com",
+    #         "email":"test3@gmail.com",
     #         "password":"test123456"
     #     },
     #     "user_session": {

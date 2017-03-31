@@ -17,6 +17,7 @@ Rails.application.routes.draw do
           get 'user_events'
           get 'user_posts'
           get 'user_followers'
+          post 'block_user'
         end
       end
       resources :registrations, only: [] do
@@ -62,7 +63,11 @@ Rails.application.routes.draw do
           post 'event_add_members'
         end
       end
-      resources :event_webs, only:[:index, :show, :destroy]
+      resources :event_webs, only:[:index, :show, :destroy] do
+        collection do
+          post 'block_event'
+        end
+      end
       resources :user_sessions, only:[] do
         collection do
           post :login

@@ -10,7 +10,7 @@ class Api::V1::UsersController < Api::V1::ApiProtectedController
         methods: [:posts_count, :followings_count, :followers_count, :events_count],
         include: {
             user: {
-                only: [:id, :profile_id, :profile_type, :first_name, :email, :last_name, :phone]
+                only: [:id, :profile_id, :profile_type, :first_name, :email, :last_name, :phone, :is_deleted]
             },
             profile_interests:{
                 only:[:id, :name, :interest_type, :photo_url]
@@ -125,5 +125,24 @@ class Api::V1::UsersController < Api::V1::ApiProtectedController
       resp_errors  = 'User not found'
     end
     common_api_response(resp_data, resp_status, resp_message, resp_errors, paging_data)
+  end
+  
+  # Call from web
+  def block_user
+    user = User.find_by_id(params[:user_id])
+    if user.present?
+      user.is_deleted = params[:is_block]
+      user.save
+      resp_data    =  {}
+      resp_status  = 1
+      resp_message = 'Success'
+      resp_errors  = ''
+    else
+      resp_data    =  {}
+      resp_status  = 0
+      resp_message = 'error'
+      resp_errors  = 'User not found.'
+    end
+    common_api_response(resp_data, resp_status, resp_message, resp_errors)
   end
 end

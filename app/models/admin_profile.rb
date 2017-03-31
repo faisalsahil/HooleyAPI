@@ -9,7 +9,7 @@ class AdminProfile < ApplicationRecord
         only:    [:id, :about, :phone, :photo, :country_id, :is_profile_public, :state, :default_group_id],
         include: {
             user:    {
-                only: [:id, :profile_id, :profile_type, :full_name, :email, :username]
+                only: [:id, :profile_id, :profile_type, :first_name, :email, :username, :last_name]
             },
             country: {
                 only: [:id, :country_name]
