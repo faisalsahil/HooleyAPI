@@ -3,8 +3,8 @@ Rails.application.routes.draw do
   devise_for :users
 
   apipie
-  root to: 'apipie/apipies#index'
-
+  # root to: 'apipie/apipies#index'
+  root to: 'dashboards#index'
   require 'sidekiq/web'
   mount Sidekiq::Web => '/sidekiq'
 
