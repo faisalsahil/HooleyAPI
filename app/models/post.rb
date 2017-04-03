@@ -747,6 +747,19 @@ class Post < ApplicationRecord
                           }
                       }
                   }
+              },
+              post_members:{
+                  only:[:id],
+                  include:{
+                      member_profile:{
+                          only:[:id, :photo],
+                          include:{
+                              user:{
+                                  only:[:id, :first_name, :last_name]
+                              }
+                          }
+                      }
+                  }
               }
           }
       )

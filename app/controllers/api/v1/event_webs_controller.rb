@@ -24,8 +24,8 @@ class Api::V1::EventWebsController < Api::V1::ApiProtectedController
     event        =  Event.find_by_id(params[:event_id])
     posts        =  event.posts
     posts        =  posts.page(params[:page].to_i).per_page(params[:per_page].to_i)
-    paging_data  = get_paging_data(params[:page], params[:per_page], posts)
-    resp_data    = Post.posts_array_response(posts, profile)
+    paging_data  =  get_paging_data(params[:page], params[:per_page], posts)
+    resp_data    =  Post.posts_array_response(posts, profile)
     resp_status  = 1
     resp_message = 'Success'
     resp_errors  = ''

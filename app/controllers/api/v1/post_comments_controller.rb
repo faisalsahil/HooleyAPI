@@ -3,11 +3,11 @@ class Api::V1::PostCommentsController < Api::V1::ApiProtectedController
   # call fom web
   def index
     post            =  Post.find_by_id(params[:post_id])
-    post_comments   =  post.post_comments
+    post_comments   =  post.comments
     post_comments   =  post_comments.page(params[:page].to_i).per_page(params[:per_page].to_i)
     paging_data     =  get_paging_data(params[:page], params[:per_page], post_comments)
     post_comments   =  post_comments.as_json(
-        only:    [:id, :post_id, :post_comment, :created_at, :updated_at, :is_deleted],
+        only:    [:id, :commentable_id, :commentable_type, :comment, :created_at, :updated_at, :is_deleted],
         methods:[:is_co_host_or_host],
         include: {
             member_profile: {
@@ -29,7 +29,7 @@ class Api::V1::PostCommentsController < Api::V1::ApiProtectedController
 
   # Call from web
   def destroy
-    post_comment  =  PostComment.find_by_id(params[:id])
+    post_comment  =  Comment.find_by_id(params[:id])
     if post_comment.present?
       if post_comment.is_deleted
         post_comment.is_deleted = false

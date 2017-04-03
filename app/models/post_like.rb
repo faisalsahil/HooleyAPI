@@ -72,7 +72,23 @@ class PostLike < ApplicationRecord
     {post_like: post_like}.as_json
   end
 
+  def self.post_likes_response(post_likes_array)
+    post_likes =  post_likes_array.as_json(
+        only:    [:id, :likable_id, :likable_type, :is_like, :created_at, :updated_at],
+        include: {
+            member_profile: {
+                only:    [:id, :photo, :gender],
+                include: {
+                    user: {
+                        only: [:id, :first_name, :last_name]
+                    }
+                }
+            }
+        }
+    )
   
+    {post_likes: post_likes}.as_json
+  end
   
   
   
@@ -134,23 +150,7 @@ class PostLike < ApplicationRecord
     end
   end
   
-  def self.post_likes_response(post_likes_array)
-    post_likes =  post_likes_array.as_json(
-        only:    [:id, :post_id, :like_status, :created_at, :updated_at],
-        include: {
-            member_profile: {
-                only:    [:id, :photo, :country_id, :is_profile_public, :gender],
-                include: {
-                    user: {
-                        only: [:id, :first_name, :last_name]
-                    }
-                }
-            }
-        }
-    )
-
-    {post_likes: post_likes}.as_json
-  end
+  
 end
 
 # == Schema Information
