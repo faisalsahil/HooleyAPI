@@ -4,7 +4,7 @@ class User < ApplicationRecord
   include AppConstants
   include PgSearch
   
-  after_create :send_email
+  # after_create :send_email
   acts_as_token_authenticatable
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :trackable, :validatable, authentication_keys: [:login]
@@ -49,7 +49,7 @@ class User < ApplicationRecord
     end
     device_type = data[:user_session][:device_type]
     if user && user.valid_password?(data[:user][:password])
-        if !user.is_deleted
+        # if !user.is_deleted
           if user.profile_type == MEMBER && (device_type == DEVICE_IOS || device_type == DEVICE_ANDR || device_type == DEVICE_WEB) || (user.profile_type == ADMIN && device_type == DEVICE_WEB)
             user_sessions = UserSession.where("device_uuid = ? AND user_id != ?", data[:user_session][:device_uuid], user.id)
             user_sessions.destroy_all if user_sessions.present?
@@ -84,12 +84,12 @@ class User < ApplicationRecord
             resp_message = 'Errors'
             resp_errors  = 'You are not allowed to sign in'
           end
-        else
-          resp_data    = {}
-          resp_status  = 0
-          resp_message = 'Errors'
-          resp_errors  = 'Your account is blocked. Please contact with admin.'
-        end
+        # else
+        #   resp_data    = {}
+        #   resp_status  = 0
+        #   resp_message = 'Errors'
+        #   resp_errors  = 'Your account is blocked. Please contact with admin.'
+        # end
       
     else
       resp_data    = {}
