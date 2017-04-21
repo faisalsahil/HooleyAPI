@@ -84,7 +84,12 @@ class MemberProfile < ApplicationRecord
         methods: [:posts_count, :followings_count, :followers_count],
         include: {
             user: {
-                only: [:id, :profile_id, :profile_type, :first_name, :email, :last_name, :phone]
+                only: [:id, :profile_id, :profile_type, :first_name, :email, :last_name, :phone],
+                include:{
+                    user_authentications:{
+                        only:[:id, :social_site, :social_site_id, :social_site_token, :profile_image_url]
+                    }
+                }
             },
             profile_interests:{
                 only:[:id, :name, :interest_type, :photo_url]
@@ -159,16 +164,13 @@ class MemberProfile < ApplicationRecord
 
     member_profile = MemberProfile.new
     member_profile.attributes = data[:member_profile]
-
     auth = UserAuthentication.find_from_social_data(member_profile.user.user_authentications.first)
-
     if auth.blank?
       if member_profile.user.email.present?
         user = User.find_by_email(member_profile.user.email)
       elsif member_profile.user.username.present?
         user = User.find_by_username(member_profile.user.username)
       end
-
       if user.present?
         UserAuthentication.create_from_social_data(member_profile.user.user_authentications.first, user)
         # user.current_sign_in_at = Time.now
@@ -182,7 +184,6 @@ class MemberProfile < ApplicationRecord
         if data[:country_code].present?
           member_profile.country_id = Country.find_by_iso(data[:country_code]).try(:d)
         end
-
         password = SecureRandom.hex(10)
         member_profile.user.password = password
         member_profile.user.password_confirmation = password
@@ -194,14 +195,14 @@ class MemberProfile < ApplicationRecord
           user.nearme_sync_datetime   = nil
           user.trending_sync_datetime = nil
           user.last_subscription_time = nil
+          user.is_account_active      = true
           user.save!
           social_sign_up_response(data, member_profile)
         else
-          resp_data = ''
+          resp_data       = {}
           resp_request_id = data[:request_id] if data && data[:request_id].present?
-          resp_status = 0
-          resp_message = 'errors'
-
+          resp_status     = 0
+          resp_message    = 'errors'
           resp_errors = error_messages(member_profile)
           JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
         end

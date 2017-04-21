@@ -1,0 +1,9 @@
+<% if @success.present? %>
+    <div style="text-align:center;">
+      <h1>Your account successfully activated. Now you can login.</h1>
+    </div>
+<% else %>
+    <div style="text-align:center;">
+      <h1>Oops! Authentication token is no longer valid or does not exist.</h1>
+    </div>
+<% end %>

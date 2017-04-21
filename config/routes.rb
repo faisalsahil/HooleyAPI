@@ -2,6 +2,11 @@ Rails.application.routes.draw do
 
   devise_for :users
 
+  resources :users, only:[] do
+    collection do
+      get 'activation'
+    end
+  end
   apipie
   # root to: 'apipie/apipies#index'
   root to: 'dashboards#index'

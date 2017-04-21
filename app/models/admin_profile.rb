@@ -1,6 +1,5 @@
 class AdminProfile < ApplicationRecord
   has_one :user, as: :profile
-  has_many :banners
   accepts_nested_attributes_for :user
   belongs_to :country
 

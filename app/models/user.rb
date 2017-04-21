@@ -4,16 +4,15 @@ class User < ApplicationRecord
   include AppConstants
   include PgSearch
   
-  # after_create :send_email
-  
+  after_create :send_email
   acts_as_token_authenticatable
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :trackable, :validatable, authentication_keys: [:login]
   
-  has_many   :user_sessions
+  has_many   :user_sessions,        dependent: :destroy
   has_many   :user_authentications, dependent: :destroy
   belongs_to :role
-  belongs_to :profile, polymorphic: true
+  belongs_to :profile, polymorphic: true, dependent: :destroy
   
   accepts_nested_attributes_for :user_authentications
   attr_accessor :login
@@ -50,48 +49,48 @@ class User < ApplicationRecord
     end
     device_type = data[:user_session][:device_type]
     if user && user.valid_password?(data[:user][:password])
-      if !user.is_deleted
-        if user.profile_type == MEMBER && (device_type == DEVICE_IOS || device_type == DEVICE_ANDR || device_type == DEVICE_WEB) || (user.profile_type == ADMIN && device_type == DEVICE_WEB)
-
-      user_sessions = UserSession.where("device_uuid = ? AND user_id != ?", data[:user_session][:device_uuid], user.id)
-      user_sessions.destroy_all if user_sessions.present?
-      user_session                = user.user_sessions.where(device_uuid: data[:user_session][:device_uuid]).try(:first) || user.user_sessions.build(data[:user_session])
-      user_session.auth_token     = SecureRandom.hex(100)
-      user_session.session_status = 'open'
-      user_session.save!
-
-      user.device_type    = data[:user_session][:device_type]
-      user.device_token   = data[:user_session][:device_token]
-      user.following_sync_datetime= nil
-      user.nearme_sync_datetime   = nil
-      user.trending_sync_datetime = nil
-      user.last_subscription_time = nil
-      user.save!
-      # destroy open sessions of post/event
-      open_sessions = OpenSession.where(user_id: user.id)
-      open_sessions.destroy_all if open_sessions.present?
-      # ==============
+        if !user.is_deleted
+          if user.profile_type == MEMBER && (device_type == DEVICE_IOS || device_type == DEVICE_ANDR || device_type == DEVICE_WEB) || (user.profile_type == ADMIN && device_type == DEVICE_WEB)
+            user_sessions = UserSession.where("device_uuid = ? AND user_id != ?", data[:user_session][:device_uuid], user.id)
+            user_sessions.destroy_all if user_sessions.present?
+            user_session                = user.user_sessions.where(device_uuid: data[:user_session][:device_uuid]).try(:first) || user.user_sessions.build(data[:user_session])
+            user_session.auth_token     = SecureRandom.hex(100)
+            user_session.session_status = 'open'
+            user_session.save!
       
-      if user.profile_type == ADMIN
-        resp_data = user.profile.admin_profile(user_session.auth_token)
-      else
-        resp_data = user.profile.member_profile(user_session.auth_token)
-      end
-      resp_status  = 1
-      resp_message = 'User Profile'
-      resp_errors  = ''
-    else
-      resp_data    = {}
-      resp_status  = 0
-      resp_message = 'Errors'
-      resp_errors  = 'You are not allowed to sign in'
+            user.device_type    = data[:user_session][:device_type]
+            user.device_token   = data[:user_session][:device_token]
+            user.following_sync_datetime= nil
+            user.nearme_sync_datetime   = nil
+            user.trending_sync_datetime = nil
+            user.last_subscription_time = nil
+            user.save!
+            # destroy open sessions of post/event
+            open_sessions = OpenSession.where(user_id: user.id)
+            open_sessions.destroy_all if open_sessions.present?
+            # ==============
+            
+            if user.profile_type == ADMIN
+              resp_data = user.profile.admin_profile(user_session.auth_token)
+            else
+              resp_data = user.profile.member_profile(user_session.auth_token)
+            end
+            resp_status  = 1
+            resp_message = 'User Profile'
+            resp_errors  = ''
+          else
+            resp_data    = {}
+            resp_status  = 0
+            resp_message = 'Errors'
+            resp_errors  = 'You are not allowed to sign in'
+          end
+        else
+          resp_data    = {}
+          resp_status  = 0
+          resp_message = 'Errors'
+          resp_errors  = 'Your account is blocked. Please contact with admin.'
         end
-      else
-        resp_data    = {}
-        resp_status  = 0
-        resp_message = 'Errors'
-        resp_errors  = 'Your account is blocked. Please contact with admin.'
-      end
+      
     else
       resp_data    = {}
       resp_status  = 0
@@ -188,10 +187,6 @@ class User < ApplicationRecord
 
   def send_email
     UserMailer.registration_confirmation(email).deliver
-  end
-
-  def self.send_forgot_password_email(email)
-    user = User.find_by_email(data[:user][:email])
   end
 
   def login=(login)
