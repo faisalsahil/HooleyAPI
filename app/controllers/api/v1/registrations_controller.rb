@@ -25,12 +25,13 @@ class Api::V1::RegistrationsController < ApplicationController
     #     "member_profile": {
     #         "is_profile_public": true,
     #         "user_attributes": {
-    #             "email": "faisalbhatti.pucit@gmail.com",
+    #             "username": "faisalbhatti",
     #             # "username": "",
     #             "user_authentications_attributes": [
     #                {
-    #                    "social_site_id": "hdddslitid",
-    #                    "social_site": "facebook"
+    #                    "social_site_id": "2323223223232",
+    #                    "social_site": "facebook",
+    #                    "social_site_token": "2345678987654"
     #                }
     #             ]
     #         }

@@ -84,7 +84,7 @@ class MemberProfile < ApplicationRecord
         methods: [:posts_count, :followings_count, :followers_count],
         include: {
             user: {
-                only: [:id, :profile_id, :profile_type, :first_name, :email, :last_name, :phone],
+                only: [:id, :profile_id, :profile_type, :first_name, :email, :last_name, :phone, :username],
                 include:{
                     user_authentications:{
                         only:[:id, :social_site, :social_site_id, :social_site_token, :profile_image_url]

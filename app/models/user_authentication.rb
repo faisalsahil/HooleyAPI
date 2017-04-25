@@ -9,7 +9,8 @@ class UserAuthentication < ApplicationRecord
     UserAuthentication.create(
         user_id:        user.id,
         social_site:    hash[:social_site],
-        social_site_id: hash[:social_site_id]
+        social_site_id: hash[:social_site_id],
+        social_site_token: hash[:social_site_token]
     )
   end
 end
