@@ -188,6 +188,29 @@ class User < ApplicationRecord
   def send_email
     UserMailer.registration_confirmation(email).deliver
   end
+  
+  def self.add_social_account(data, current_user)
+    begin
+      data = data.with_indifferent_access
+      auth = UserAuthentication.find_from_social_data(data[:user_authentication])
+      if auth.blank?
+        UserAuthentication.create_from_social_data(data[:user_authentication], current_user)
+      else
+        auth.update_attributes(data[:user_authentication])
+      end
+      resp_data       = {}
+      resp_status     = 1
+      resp_message    = 'User account successfully added.'
+      resp_errors     = ''
+    rescue Exception => e
+      resp_data       = {}
+      resp_status     = 0
+      resp_message    = 'error'
+      resp_errors     = e
+    end
+    resp_request_id   = data[:request_id]
+    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
+  end
 
   def login=(login)
     @login = login

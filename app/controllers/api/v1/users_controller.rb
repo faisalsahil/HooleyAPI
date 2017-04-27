@@ -145,4 +145,23 @@ class Api::V1::UsersController < Api::V1::ApiProtectedController
     end
     common_api_response(resp_data, resp_status, resp_message, resp_errors)
   end
+  
+  def add_social_account
+    # params = {
+    #   "auth_token": UserSession.last.auth_token,
+    #   "user_authentication":{
+    #     "social_site_id": "2323-2323dfdf-3344eee",
+    #     "social_site": "twitter",
+    #     "social_site_token": "234567890"
+    #   }
+    # }
+    user_session = UserSession.find_by_auth_token(params[:auth_token])
+    if user_session.present?
+      response = User.add_social_account(params, user_session.user)
+      render json: response
+    else
+      resp_data = {resp_data: {}, resp_status: 0, resp_message: 'Invalid Token', resp_error: 'error'}.as_json
+      return render json: resp_data
+    end
+  end
 end

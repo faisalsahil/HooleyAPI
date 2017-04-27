@@ -23,6 +23,7 @@ Rails.application.routes.draw do
           get 'user_posts'
           get 'user_followers'
           post 'block_user'
+          post 'add_social_account'
         end
       end
       resources :registrations, only: [] do
