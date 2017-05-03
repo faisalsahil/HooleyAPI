@@ -270,7 +270,7 @@ class MemberProfile < ApplicationRecord
   def self.get_profile(data, current_user)
     begin
       data          = data.with_indifferent_access
-      profile       = MemberProfile.find_by_id(data[:member_profile_id])
+        profile       = MemberProfile.find_by_id(data[:member_profile_id])
       resp_data     = profile.member_profile
       resp_status   = 1
       resp_message  = 'success'

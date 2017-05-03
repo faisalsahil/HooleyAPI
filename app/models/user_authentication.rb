@@ -6,10 +6,10 @@ class UserAuthentication < ApplicationRecord
   end
 
   def self.create_from_social_data(hash, user)
-    UserAuthentication.create(
-        user_id:        user.id,
-        social_site:    hash[:social_site],
-        social_site_id: hash[:social_site_id],
+    auth = UserAuthentication.create(
+        user_id:           user.id,
+        social_site:       hash[:social_site],
+        social_site_id:    hash[:social_site_id],
         social_site_token: hash[:social_site_token]
     )
   end

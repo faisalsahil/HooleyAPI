@@ -194,11 +194,11 @@ class User < ApplicationRecord
       data = data.with_indifferent_access
       auth = UserAuthentication.find_from_social_data(data[:user_authentication])
       if auth.blank?
-        UserAuthentication.create_from_social_data(data[:user_authentication], current_user)
+        auth = UserAuthentication.create_from_social_data(data[:user_authentication], current_user)
       else
         auth.update_attributes(data[:user_authentication])
       end
-      resp_data       = {}
+      resp_data       = {user_authentication: auth}.as_json
       resp_status     = 1
       resp_message    = 'User account successfully added.'
       resp_errors     = ''
