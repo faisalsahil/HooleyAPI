@@ -150,9 +150,9 @@ class Api::V1::UsersController < Api::V1::ApiProtectedController
     # params = {
     #   "auth_token": UserSession.last.auth_token,
     #   "user_authentication":{
-    #     "social_site_id": "2323-2323dfdf-3344eee",
-    #     "social_site": "twitter",
-    #     "social_site_token": "234567890"
+    #     "social_site_id": "23223-2323df2df-3344eee",
+    #     "social_site": "google",
+    #     "social_site_token": "22345634567890"
     #   }
     # }
     user_session = UserSession.find_by_auth_token(params[:auth_token])
