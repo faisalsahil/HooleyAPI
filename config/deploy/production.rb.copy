@@ -4,4 +4,4 @@ set :application, 'HooleyAPI'
 
 set :deploy_to, '/home/live/HooleyAPI'
 
-set :repo_url, 'git@gitrepos.com:rubyonrails/Hooley.git'
+set :repo_url, 'git@gitrepos.com:rubyonrails/HooleyAPI.git'
