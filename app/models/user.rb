@@ -198,9 +198,9 @@ class User < ApplicationRecord
       else
         auth.update_attributes(data[:user_authentication])
       end
-      data = []
-      data << auth
-      resp_data       = {user_authentications: auth}.as_json
+      auth_data = []
+      auth_data << auth
+      resp_data       = {user_authentications: auth_data}.as_json
       resp_status     = 1
       resp_message    = 'User account successfully added.'
       resp_errors     = ''
