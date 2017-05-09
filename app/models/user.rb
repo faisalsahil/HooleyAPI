@@ -200,7 +200,14 @@ class User < ApplicationRecord
       end
       auth_data = []
       auth_data << auth
-      resp_data       = {user_authentications: auth_data}.as_json
+      response = {
+          member_profile:{
+            user:{
+                user_authentications: auth_data
+            }
+          }
+      }
+      resp_data       = response
       resp_status     = 1
       resp_message    = 'User account successfully added.'
       resp_errors     = ''
