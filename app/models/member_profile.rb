@@ -87,7 +87,7 @@ class MemberProfile < ApplicationRecord
                 only: [:id, :profile_id, :profile_type, :first_name, :email, :last_name, :phone, :username],
                 include:{
                     user_authentications:{
-                        only:[:id, :social_site, :social_site_id, :social_site_token, :profile_image_url]
+                        only:[:id, :social_site, :social_site_id, :social_site_token, :profile_image_url, :username, :email]
                     }
                 }
             },

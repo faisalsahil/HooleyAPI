@@ -10,7 +10,9 @@ class UserAuthentication < ApplicationRecord
         user_id:           user.id,
         social_site:       hash[:social_site],
         social_site_id:    hash[:social_site_id],
-        social_site_token: hash[:social_site_token]
+        social_site_token: hash[:social_site_token],
+        username:       hash[:username] || nil,
+        email:          hash[:email] || nil
     )
   end
 end

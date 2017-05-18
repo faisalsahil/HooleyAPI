@@ -16,7 +16,6 @@ class Api::V1::UserSessionsController < ApplicationController
             "password":"123456"
           }
         }
-
   EOS
 
   def login
