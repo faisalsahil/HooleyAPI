@@ -56,6 +56,7 @@ Rails.application.routes.draw do
         collection do
           get 'get_followers'
           get 'get_following_requests'
+          get 'search_member'
         end
       end
       resources :events, only:[] do

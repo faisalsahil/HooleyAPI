@@ -11,6 +11,61 @@ class MemberFollowing < ApplicationRecord
       false
     end
   end
+
+  def self.search_member(data, current_user)
+    begin
+      data = data.with_indifferent_access
+      per_page = (data[:per_page] || @@limit).to_i
+      page     = (data[:page] || 1).to_i
+      users    = User.all
+      if data[:search_key].present?
+        profile_ids = users.where('username LIKE ? OR email LIKE ? OR first_name LIKE ? OR last_name LIKE ?',"%#{data[:search_key]}%", "%#{data[:search_key]}%", "%#{data[:search_key]}%", "%#{data[:search_key]}%").pluck(:profile_id)
+      else
+        profile_ids = users.pluck(:profile_id)
+      end
+      if profile_ids.present?
+        member_profiles = MemberProfile.where(id: profile_ids)
+      
+        member_profiles = member_profiles.page(page.to_i).per_page(per_page.to_i)
+        paging_data = JsonBuilder.get_paging_data(page, per_page, member_profiles)
+      
+        resp_data = response_member_profiles(member_profiles, current_user)
+      
+        resp_status = 1
+        resp_message = 'success'
+        resp_errors = ''
+      else
+        resp_data = {}
+        resp_status = 1
+        resp_message = 'success'
+        resp_errors = 'No string match found.'
+      end
+    rescue Exception => e
+      resp_data       = {}
+      resp_status     = 0
+      paging_data     = ''
+      resp_message    = 'error'
+      resp_errors     = e
+    end
+    resp_request_id   = data[:request_id]
+    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
+  end
+
+  def self.response_member_profiles(member_profiles, current_user)
+    member_profiles = member_profiles.to_xml(
+        only: [:id, :photo],
+        :procs => Proc.new { |options, member_profile|
+          options[:builder].tag!('is_following', MemberProfile.is_following(member_profile, current_user))
+          options[:builder].tag!('is_follower',  MemberProfile.is_following(member_profile, current_user))
+        },
+        include: {
+            user: {
+                only: [:id, :email, :username, :first_name, :last_name]
+            }
+        }
+    )
+    Hash.from_xml(member_profiles).as_json
+  end
   
   def self.get_followers(data, current_user)
     begin

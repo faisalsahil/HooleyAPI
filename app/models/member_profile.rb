@@ -80,7 +80,7 @@ class MemberProfile < ApplicationRecord
 
   def member_profile(auth_token=nil)
     member_profile = self.as_json(
-        only: [:id, :photo, :country_id, :city_id, :is_profile_public, :gender, :dob, :high_school, :is_age_visible, :gender, :current_city, :home_town, :employer, :college, :high_school, :organization, :hobbies, :banner_image, :is_near_me_event_alert, :is_hooly_invite_alert, :is_my_upcoming_event_alert, :is_direct_message_alert, :is_contact_info_shown, :is_social_info_shown, :is_direct_message_allow, :is_private_media_share, :is_public_media_share, :near_event_search],
+        only: [:id, :photo, :country_id, :city_id, :is_profile_public, :gender, :dob, :high_school, :is_age_visible, :gender, :current_city, :home_town, :employer, :college, :high_school, :organization, :hobbies, :banner_image, :is_near_me_event_alert, :is_hooly_invite_alert, :is_my_upcoming_event_alert, :is_direct_message_alert, :is_contact_info_shown, :is_social_info_shown, :is_direct_message_allow, :is_private_media_share, :is_public_media_share, :near_event_search, :handler],
         methods: [:posts_count, :followings_count, :followers_count],
         include: {
             user: {
