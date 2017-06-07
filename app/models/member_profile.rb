@@ -81,7 +81,7 @@ class MemberProfile < ApplicationRecord
   def profile_fil_attributes
     hash = self.attributes.slice('photo', 'about', 'handler', 'is_age_visible', 'gender', 'current_city', 'occupation_id', 'home_town', 'employer', 'college_major_id', 'college', 'high_school', 'organization', 'hobbies', 'relationship_status_id', 'political_view_id', 'religion_id', 'language_id', 'ethnic_background_id', 'contact_phone', 'contact_website', :'contact_address')
     hash.delete_if{|k,v| v.nil?}
-    hash.count
+    hash.count + self.user.user_authentications.count
   end
 
   def member_profile(auth_token=nil)
