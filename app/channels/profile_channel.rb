@@ -30,9 +30,12 @@ class ProfileChannel < ApplicationCable::Channel
   end
 
   def event_create(data)
-    response, event_id = Event.event_create(data, current_user)
+    response, event_id, is_all_invited = Event.event_create(data, current_user)
     ProfileJob.perform_later response, current_user.id
     if event_id != 0
+      if is_all_invited == true || is_all_invited == "1" || is_all_invited == 1
+        Event.invite_all_friends(event_id, current_user)
+      end
       Event.event_sync_to_members(event_id, current_user)
       Event.event_creation_notification(event_id, current_user)
     end

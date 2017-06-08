@@ -66,6 +66,7 @@ class Event < ApplicationRecord
           member.is_invited = true
           member.save
         end
+        
         sync_event_id   = event.id
         resp_data       = {}
         resp_status     = 1
@@ -86,7 +87,7 @@ class Event < ApplicationRecord
     end
     resp_request_id = data[:request_id]
     response = JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
-    [response, sync_event_id]
+    [response, sync_event_id, data[:is_all_invited]]
   end
   
   def self.show_event(data, current_user)
@@ -583,6 +584,19 @@ class Event < ApplicationRecord
       end
     else
       {events: []}.as_json
+    end
+  end
+  
+  def self.invite_all_friends(event_id, current_user)
+    ids = []
+    ids << MemberFollowing.where(member_profile_id: current_user.profile_id, following_status: AppConstants::ACCEPTED).pluck(:following_profile_id)
+    ids << MemberFollowing.where(following_profile_id: current_user.profile_id, following_status: AppConstants::ACCEPTED).pluck(:member_profile_id)
+    ids = ids.flatten.uniq
+    event_profile_ids = EventMember.where(event_id: event_id).pluck(:member_profile_id)
+    ids&.each do |profile_id|
+      if not event_profile_ids.include? profile_id
+        EventMember.create!(event_id: event_id, member_profile_id: profile_id, is_invited: true)
+      end
     end
   end
   
