@@ -250,4 +250,51 @@ class Comment < ApplicationRecord
       JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
     end
   end
+
+
+  def self.comment_notification(object_id, object_type, current_user)
+    begin
+      profile_ids = []
+      if object_type == 'Post'
+        objects = Post.where(id: object_id).includes(:post_members, :comments, :likes)
+        profile_ids << objects.first.post_members.pluck(:member_profile_id)
+      elsif object_type == 'Event'
+        objects = Event.where(id: object_id).includes(:event_members, :event_co_hosts, :comments, :likes)
+        profile_ids << objects.first.event_members.pluck(:member_profile_id)
+        profile_ids << objects.first.event_co_hosts.pluck(:member_profile_id)
+      end
+      profile_ids << objects.first.comments.pluck(:member_profile_id)
+      profile_ids << objects.first.likes.pluck(:member_profile_id)
+      profile_ids << objects.first.member_profile_id
+
+      poll_created_by_user = User.find_by_profile_id(objects.first.member_profile_id)
+      poll_created_by_username = poll_created_by_user.username || "#{poll_created_by_user.first_name} #{poll_created_by_user.last_name}" || poll_created_by_user.email
+      users  = User.where(profile_id: profile_ids.flatten.uniq)
+      ## ======================== Send Notification ========================
+      users && users.each do |user|
+        if user != current_user
+          if user.profile_id == objects.first.member_profile_id
+            alert = current_user.username || "#{current_user.first_name} #{current_user.last_name}" || current_user.email + ' ' + AppConstants::COMMENT_YOUR_POST
+          else
+            name = current_user.username || "#{current_user.first_name} #{current_user.last_name}" || current_user.email
+            if current_user == poll_created_by_user
+              alert = name + ' ' + AppConstants::COMMENT_OWN
+            else
+              alert = name + ' ' + 'commented on' + ' ' + poll_created_by_username + '\'s post'
+            end
+          end
+          if object_type == 'Post'
+            screen_data = {post_id: objects.first.id}.as_json
+            Notification.send_hooly_notification(user, alert, AppConstants::POST, true, screen_data)
+          elsif object_type == 'Event'
+            screen_data = {event_id: objects.first.id}.as_json
+            Notification.send_hooly_notification(user, alert, AppConstants::EVENT, true, screen_data)
+          end
+        end
+      end
+        ## ===================================================================
+    rescue Exception => e
+      puts e
+    end
+  end
 end

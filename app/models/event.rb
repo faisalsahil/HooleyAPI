@@ -15,6 +15,7 @@ class Event < ApplicationRecord
   has_many   :event_bookmarks,   dependent: :destroy
   has_many   :synchronizations, as: :media,       dependent: :destroy
   has_many   :comments,         as: :commentable, dependent: :destroy
+  has_many   :likes,            as: :likable,     dependent: :destroy
   has_many   :posts,                              dependent: :destroy
   
   validates_presence_of :event_name, :start_date, :end_date, :location, :longitude, :latitude, :category_id, :member_profile_id
@@ -113,7 +114,7 @@ class Event < ApplicationRecord
     
     member_profile_ids  = []
     member_profile_ids << events.first.event_members.pluck(:member_profile_id)
-    
+    member_profile_ids << events.first.event_co_hosts.pluck(:member_profile_id)
     # Followers
     # member_profile_ids << MemberFollowing.where("following_profile_id = ? AND following_status = ? ", current_user.profile_id, AppConstants::ACCEPTED).pluck(:member_profile_id)
    
@@ -477,13 +478,27 @@ class Event < ApplicationRecord
       event = Event.find_by_id(data[:event][:id])
       if current_user.profile_id == event.member_profile_id || event.is_friends_allowed?
         event_members = data[:event][:event_members_attributes]
+        
+        profile_ids = []
+        
         event_members.each do |member|
           event_member = EventMember.find_by_member_profile_id_and_event_id(member[:member_profile_id], event.id) || event.event_members.build
           if event_member.new_record?
             event_member.member_profile_id = member[:member_profile_id]
+            event_member.is_invited        = true
             event_member.save
+            profile_ids << event_member.member_profile_id
           end
         end
+        # Send notification
+        name  = current_user.username || current_user.first_name || current_user.email
+        alert = name + ' ' + AppConstants::INVITED_EVENT
+        screen_data = {event_id: event.id}.as_json
+        member_profiles = MemberProfile.where(id: profile_ids, is_hooly_invite_alert: true).includes(:user)
+        member_profiles&.each do |profile|
+          Notification.send_hooly_notification(profile.user, alert, AppConstants::EVENT, true, screen_data)
+        end
+        
         resp_data       = {}
         resp_status     = 1
         resp_message    = 'success'
@@ -579,15 +594,24 @@ class Event < ApplicationRecord
         alert = name + ' ' + AppConstants::Event_CREATED
         screen_data = {event_id: event_id}.as_json
         
-        member_profiles  =  MemberProfile.within(50, :origin => [event.latitude, event.longitude]).where(is_near_me_event_alert: true)
-
+        member_profiles  =  MemberProfile.within(50, :origin => [event.latitude, event.longitude]).where(is_near_me_event_alert: true, is_hooly_invite_alert: true)
         member_profiles && member_profiles.each do |profile|
           current_location = Geokit::LatLng.new(profile.latitude, profile.longitude)
           destination      = "#{event.latitude},#{event.longitude}"
           distance         = current_location.distance_to(destination)  # return in miles
           if distance.present? && distance.round <= profile.near_event_search.round
-            Notification.send_hooly_notification(member_profiles.first.user, alert, AppConstants::EVENT, true, screen_data)
+             Notification.send_hooly_notification(profile.user, alert, AppConstants::EVENT, true, screen_data)
           end
+        end
+
+        event_member_ids = []
+        event_member_ids << event.event_members.pluck(:member_profile_id)
+        event_member_ids << event.event_co_hosts.pluck(:member_profile_id)
+        event_member_ids =  event_member_ids.flatten.uniq
+        users  = User.where(profile_id: event_member_ids)
+        alert = name + ' ' + AppConstants::INVITED_EVENT
+        users&.each do |user|
+          Notification.send_hooly_notification(user, alert, AppConstants::EVENT, true, screen_data)
         end
       end
     rescue Exception => e

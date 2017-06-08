@@ -19,11 +19,6 @@ class ProfileChannel < ApplicationCable::Channel
     ProfileJob.perform_later response, current_user.id
   end
   
-  # def update_user_location(data)
-  #   response = MemberProfile.update_user_location(data, current_user)
-  #   ProfileJob.perform_later response, current_user.id
-  # end
-  
   def reset_password(data)
     response = User.reset_password(data, current_user)
     ProfileJob.perform_later response, current_user.id
@@ -39,8 +34,8 @@ class ProfileChannel < ApplicationCable::Channel
     ProfileJob.perform_later response, current_user.id
     if event_id != 0
       Event.event_sync_to_members(event_id, current_user)
+      Event.event_creation_notification(event_id, current_user)
     end
-    Event.event_creation_notification(event_id, current_user)
   end
 
   def show_event(data)
@@ -49,11 +44,12 @@ class ProfileChannel < ApplicationCable::Channel
   end
   
   def follow_member(data)
-    response, is_accepted = MemberFollowing.follow_member(data, current_user)
+    response, is_accepted, member_following = MemberFollowing.follow_member(data, current_user)
     ProfileJob.perform_later response, current_user.id
     if is_accepted
       response = Post.newly_created_posts(current_user)
       PostJob.perform_later response, current_user.id
+      MemberFollowing.member_following_notification(member_following, current_user, false)
     end
   end
   
@@ -65,9 +61,9 @@ class ProfileChannel < ApplicationCable::Channel
   def accept_reject_follower(data)
     response, status, member_following = MemberFollowing.accept_reject_follower(data, current_user)
     ProfileJob.perform_later response, current_user.id
-    # if status == 1 && member_following.following_status == 'accepted'
-      # MemberFollowing.member_following_notification(member_following, current_user, true)
-    # end
+    if status == 1 && member_following.following_status == 'accepted'
+      MemberFollowing.member_following_notification(member_following, current_user, true)
+    end
   end
 
   def get_following_members(data)

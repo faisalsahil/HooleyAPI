@@ -122,8 +122,8 @@ class Api::V1::EventsController < ApplicationController
   
   def event_register
     # params = {
-    #   "auth_token": "111111111",
-    #   "event_id": 13,
+    #   "auth_token": UserSession.last.auth_token,
+    #   "event_id": 31,
     # }
     user_session = UserSession.find_by_auth_token(params[:auth_token])
     current_user = user_session.user
@@ -136,6 +136,13 @@ class Api::V1::EventsController < ApplicationController
       end
       event_member.invitation_status = AppConstants::REGISTERED
       if event_member.save
+        # Send Notification here...
+        event_profile_user = Event.find_by_id(params[:event_id]).member_profile.user
+        name  = current_user.username || current_user.first_name || current_user.email
+        alert = name + ' ' + AppConstants::REGISTERED_TO_EVENT
+        screen_data = {event_id: params[:event_id]}.as_json
+        Notification.send_hooly_notification(event_profile_user, alert, AppConstants::EVENT, true, screen_data)
+        
         resp_data       = {}
         resp_status     = 1
         resp_message    = 'Registered.'
@@ -217,11 +224,9 @@ class Api::V1::EventsController < ApplicationController
   
   def event_add_members
     # params = {
-    #   "auth_token": "1111111111",
-    #   "per_page":10,
-    #   "page":1,
+    #   "auth_token": UserSession.last.auth_token,
     #   "event": {
-    #       "id": 1,
+    #       "id": 31,
     #       "event_members_attributes":[
     #            {
     #                "member_profile_id": 3,

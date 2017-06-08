@@ -5,7 +5,7 @@ class Api::V1::PostLikesController < Api::V1::ApiProtectedController
     post_likes   =  post.likes
     post_likes   =  post_likes.page(params[:page].to_i).per_page(params[:per_page].to_i)
     paging_data  = get_paging_data(params[:page], params[:per_page], post_likes)
-    resp_data    = PostLike.post_likes_response(post_likes)
+    resp_data    = Like.likes_response(post_likes)
     resp_status  = 1
     resp_message = 'Success'
     resp_errors  = ''

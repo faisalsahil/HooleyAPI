@@ -15,7 +15,6 @@ class PostChannel < ApplicationCable::Channel
       else
         newly_created_syncing_posts(current_user, params[:session_id], params[:type], false)
       end
-      
     elsif current_user.present?
       stream_from "post_channel_#{current_user.id}"
     else
@@ -116,6 +115,7 @@ class PostChannel < ApplicationCable::Channel
       object_id   = json_obj['data']['comments'][0]['commentable_id']
       object_type = json_obj['data']['comments'][0]['commentable_type']
       Comment.broadcast_comment(broadcast_response, object_id,  object_type)
+      Comment.comment_notification(object_id,  object_type, current_user)
     end
   end
 
@@ -123,17 +123,6 @@ class PostChannel < ApplicationCable::Channel
     response = Comment.comments_list(data, current_user)
     PostJob.perform_later response, current_user.id
   end
-
-  # def post_like(data)
-  #   response, resp_broadcast = Like.like(data, current_user)
-  #   PostJob.perform_later response, current_user.id
-  #   json_obj = JSON.parse(response)
-  #   if json_obj["resp_status"] == AppConstants::LIKED
-  #     object_id   = json_obj['data']['like']['likable_id']
-  #     object_type = json_obj['data']['like']['likable_type']
-  #     Like.broadcast_like(resp_broadcast, object_id,  object_type)
-  #   end
-  # end
 
   def like(data)
     response, resp_broadcast = Like.like(data, current_user)
@@ -143,23 +132,9 @@ class PostChannel < ApplicationCable::Channel
       object_id   = json_obj['data']['like']['likable_id']
       object_type = json_obj['data']['like']['likable_type']
       Like.broadcast_like(resp_broadcast, object_id,  object_type)
+      Like.like_notification(object_id,  object_type, current_user)
     end
   end
-  
-  # def post_members_list(data, current_user)
-  #   response = PostMember.post_members_list(data, current_user)
-  #   PostJob.perform_later response, current_user.id
-  # end
-  #
-  # def post_likes_list(data)
-  #   response = PostLike.post_likes_list(data, current_user)
-  #   PostJob.perform_later response, current_user.id
-  # end
-  #
-  # def auto_complete(data)
-  #   response = Hashtag.auto_complete(data, current_user)
-  #   PostJob.perform_later response, current_user.id
-  # end
   
   protected
   def find_verified_user

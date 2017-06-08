@@ -1,7 +1,7 @@
 module Notification
 
   def self.send_hooly_notification(user, alert, screen, is_save_notification, screen_data = {})
-    # begin
+    begin
       badge       = 1
       
       if is_save_notification
@@ -63,8 +63,8 @@ module Notification
         puts "Notification not send"
         puts "XX"*10
       end
-    # rescue => e
-    #   puts e.inspect
-    # end
+    rescue => e
+      puts e.inspect
+    end
   end
 end

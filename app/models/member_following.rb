@@ -125,16 +125,16 @@ class MemberFollowing < ApplicationRecord
           member_following.following_status = AppConstants::ACCEPTED
           resp_message = 'Following Request Submitted'
           is_accepted  = true
+          member_following.save!
+          # Make friend in two way
+          new_following = MemberFollowing.new
+          new_following.member_profile_id    = member_following.following_profile_id
+          new_following.following_profile_id = member_following.member_profile_id
+          new_following.following_status     = member_following.following_status
+          new_following.save!
         else
           resp_message = 'Request sent.'
         end
-        member_following.save!
-        # Make friend in two way
-        new_following = MemberFollowing.new
-        new_following.member_profile_id    = member_following.following_profile_id
-        new_following.following_profile_id = member_following.member_profile_id
-        new_following.following_status     = member_following.following_status
-        new_following.save!
         resp_status = 1
         resp_errors = ''
       else
@@ -158,18 +158,20 @@ class MemberFollowing < ApplicationRecord
         resp_status  = 1
         resp_errors  = ''
       end
-    
       resp_data      = {is_im_following: MemberProfile.is_following(following_to_profile, current_user)}
+      resp_request_id = data[:request_id]
+      response = JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
+      [response, is_accepted, member_following]
     rescue Exception => e
-      resp_data      = ''
+      resp_data      = {}
       resp_status    = 0
       paging_data    = ''
       resp_message   = 'error'
       resp_errors    = e
+      resp_request_id = data[:request_id]
+      response = JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
+      [response, is_accepted]
     end
-    resp_request_id = data[:request_id]
-    response = JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
-    [response, is_accepted]
   end
 
   def self.get_following_requests(data, current_user)
@@ -362,6 +364,29 @@ class MemberFollowing < ApplicationRecord
         }
     }
     {"#{root}": response, member_profile: profile}.as_json
+  end
+
+  def self.member_following_notification(member_following, current_user, is_accept_reject)
+    if is_accept_reject == true
+      member_profile      = member_following.member_profile
+      approved_by_user = User.find_by_profile_id(member_following.following_profile_id)
+      name = approved_by_user.username || "#{approved_by_user.first_name} #{approved_by_user.last_name}" || approved_by_user.email
+      
+      alert = AppConstants::FRIEND_REQUEST_ACCEPTED + ' ' + name
+      screen_data = {member_following_id: member_following.id, status: member_following.following_status, member_profile_id: member_following.following_profile_id}.as_json
+      Notification.send_hooly_notification(member_profile.user, alert, AppConstants::FRIEND_REQUEST_SCREEN, true, screen_data)
+    else
+      name  =  current_user.username || "#{current_user.first_name} #{current_user.last_name}" || current_user.email
+      # following_to_profile  = MemberProfile.find(member_following.following_profile_id)
+      user = User.find_by_profile_id(member_following.following_profile_id)
+      if member_following.following_status == AppConstants::ACCEPTED
+        alert  = name + ' ' + AppConstants::START_FOLLOWING_YOU
+      else
+        alert  = name + ' ' + AppConstants::FRIEND_REQUEST
+      end
+      screen_data = {member_following_id: member_following.id, status: member_following.following_status, member_profile_id: member_following.member_profile_id}.as_json
+      Notification.send_hooly_notification(user, alert, AppConstants::FOLLOWING_SCREEN, true, screen_data)
+    end
   end
 end
 
