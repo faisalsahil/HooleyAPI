@@ -82,6 +82,11 @@ Rails.application.routes.draw do
       end
       resources :dashboards, only:[:index]
       resources :event_bookmarks, only:[:index, :create]
+      resources :favourites, only: [] do
+        collection do
+          post :add_to_favourite
+        end
+      end
     end
   end
 

@@ -135,7 +135,11 @@ class PostChannel < ApplicationCable::Channel
       Like.like_notification(object_id,  object_type, current_user)
     end
   end
-  
+
+  def likes_list(data)
+    response = Like.likes_list(data, current_user)
+    PostJob.perform_later response, current_user.id
+  end
   protected
   def find_verified_user
     user_session = UserSession.find_by_auth_token(params[:auth_token])

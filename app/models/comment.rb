@@ -250,8 +250,7 @@ class Comment < ApplicationRecord
       JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
     end
   end
-
-
+  
   def self.comment_notification(object_id, object_type, current_user)
     begin
       profile_ids = []

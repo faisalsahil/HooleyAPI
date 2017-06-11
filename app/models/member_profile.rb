@@ -7,8 +7,10 @@ class MemberProfile < ApplicationRecord
   has_many   :member_followings
   has_many   :posts
   has_many   :events
-  has_many   :profile_interests
   has_many   :event_bookmarks
+  has_many   :favourites
+  has_many   :recent_favourites, -> { order(created_at: :desc).limit(5) }, class_name: 'Favourite'
+  
   belongs_to :country
   belongs_to :city
   belongs_to :occupation
@@ -19,7 +21,7 @@ class MemberProfile < ApplicationRecord
   belongs_to :language
   belongs_to :ethnic_background
   
-  accepts_nested_attributes_for :user, :profile_interests
+  accepts_nested_attributes_for :user, :favourites
 
   @@limit = 10
   @@current_profile = nil
@@ -81,7 +83,11 @@ class MemberProfile < ApplicationRecord
   def profile_fil_attributes
     hash = self.attributes.slice('photo', 'about', 'handler', 'is_age_visible', 'gender', 'current_city', 'occupation_id', 'home_town', 'employer', 'college_major_id', 'college', 'high_school', 'organization', 'hobbies', 'relationship_status_id', 'political_view_id', 'religion_id', 'language_id', 'ethnic_background_id', 'contact_phone', 'contact_website', :'contact_address')
     hash.delete_if{|k,v| v.nil?}
-    hash.count + self.user.user_authentications.count
+    
+    u = self.user.attributes.slice('first_name', 'last_name')
+    u = u.delete_if{|k,v| v.nil?}
+
+    hash.count + self.user.user_authentications.count + u.count
   end
 
   def member_profile(auth_token=nil)
@@ -97,8 +103,18 @@ class MemberProfile < ApplicationRecord
                     }
                 }
             },
-            profile_interests:{
-                only:[:id, :name, :interest_type, :photo_url]
+            recent_favourites: {
+                only: [:id, :created_at, :updated_at],
+                include: {
+                    event: {
+                        only: [:id, :event_name],
+                        include:{
+                            event_attachments: {
+                                only:[:id, :attachment_url, :thumbnail_url, :poster_skin]
+                            }
+                        }
+                    }
+                }
             },
             country: {
                 only: [:id, :country_name]

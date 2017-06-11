@@ -164,53 +164,31 @@ class Like < ApplicationRecord
       puts e
     end
   end
-
   
-  
-  
-  
-  
-  
-  def self.post_likes_list(data, current_user, sync=nil)
+  def self.likes_list(data, current_user)
     begin
       data       = data.with_indifferent_access
       per_page   = (data[:per_page] || @@limit).to_i
       page       = (data[:page] || 1).to_i
-      post       = Post.find_by_id(data[:post][:id])
-      post_likes = post.post_likes.where(is_deleted: false, like_status: true)
       
-      if post_likes
-        post_likes  = post_likes.page(page.to_i).per_page(per_page.to_i)
-        paging_data = JsonBuilder.get_paging_data(page, per_page, post_likes)
-        if sync.present?
-          resp_data       = post.post_response
-        else
-          resp_data       = post_likes_response(post_likes)
-        end
+      post    = Post.find_by_id(data[:post][:id])
+      likes   = post.likes.where(is_deleted: false, is_like: true)
+
+      likes  = likes.page(page.to_i).per_page(per_page.to_i)
+      paging_data = JsonBuilder.get_paging_data(page, per_page, likes)
+      resp_data       = likes_response(likes)
         
-        resp_status     = 1
-        resp_message    = 'Post Likes List'
-        resp_errors     = ''
-      else
-        resp_data       = ''
-        resp_status     = 0
-        resp_message    = 'Errors'
-        resp_errors     = 'Post Likes Does not exist'
-      end
-      resp_request_id = data[:request_id]
-      if sync.present?
-        JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, type: "Sync", paging_data: paging_data)
-      else
-        JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
-      end
+      resp_status     = 1
+      resp_message    = 'Post Likes List'
+      resp_errors     = ''
     rescue Exception => e
-      resp_data       = ''
+      resp_data       = {}
       resp_status     = 0
       paging_data     = ''
       resp_message    = 'error'
       resp_errors     = e
-      resp_request_id   = data[:request_id]
-      response          = JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
     end
+    resp_request_id   = data[:request_id] || ''
+    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors, paging_data: paging_data)
   end
 end

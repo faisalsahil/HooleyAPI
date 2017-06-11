@@ -12,9 +12,6 @@ class Api::V1::UsersController < Api::V1::ApiProtectedController
             user: {
                 only: [:id, :profile_id, :profile_type, :first_name, :email, :last_name, :phone, :is_deleted]
             },
-            profile_interests:{
-                only:[:id, :name, :interest_type, :photo_url]
-            },
             country: {
                 only: [:id, :country_name]
             },

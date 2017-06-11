@@ -329,6 +329,7 @@ class MemberFollowing < ApplicationRecord
               photo:            profile.photo,
               gender:           profile.gender,
               dob:              profile.dob,
+              contact_address:  profile.contact_address,
               is_im_following:  MemberProfile.is_following(profile, current_user),
               is_my_follower:   MemberProfile.is_follower(profile, current_user),
               country: {
