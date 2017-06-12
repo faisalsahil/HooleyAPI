@@ -68,7 +68,7 @@ class Event < ApplicationRecord
         end
         
         sync_event_id   = event.id
-        resp_data       = {}
+        resp_data       = events_response(event, current_user)
         resp_status     = 1
         resp_message    = 'Event Created'
         resp_errors     = ''

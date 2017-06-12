@@ -69,3 +69,6 @@ religions.each do |relg|
 end
 
 
+Category.create!(name: 'hooley', is_deleted: true)
+
+
