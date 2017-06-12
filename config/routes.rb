@@ -88,6 +88,7 @@ Rails.application.routes.draw do
           get  :profile_favourites
         end
       end
+      resources :report_posts, only:[:create]
     end
   end
 

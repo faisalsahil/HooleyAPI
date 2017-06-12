@@ -4,6 +4,14 @@ class Favourite < ApplicationRecord
   belongs_to :post
   @@limit = 10
   
+  def self.is_my_favourite(post, profile_id)
+    favourite = Favourite.find_by_member_profile_id_and_post_id(profile_id, post.id)
+    if favourite.present?
+      return true
+    else
+      false
+    end
+  end
   
   def self.add_to_favourite(data, current_user)
     begin

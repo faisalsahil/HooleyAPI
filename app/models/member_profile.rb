@@ -4,11 +4,12 @@ class MemberProfile < ApplicationRecord
 
   has_one    :user, as: :profile
   has_many   :synchronizations, as: :media
-  has_many   :member_followings
-  has_many   :posts
-  has_many   :events
-  has_many   :event_bookmarks
-  has_many   :favourites
+  has_many   :member_followings, dependent: :destroy
+  has_many   :posts,          dependent: :destroy
+  has_many   :events,         dependent: :destroy
+  has_many   :event_bookmarks,dependent: :destroy
+  has_many   :favourites,     dependent: :destroy
+  has_many   :report_posts,   dependent: :destroy
   has_many   :recent_favourites, -> { order(created_at: :desc).limit(5) }, class_name: 'Favourite'
   
   belongs_to :country

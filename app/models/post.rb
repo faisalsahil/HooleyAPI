@@ -55,10 +55,15 @@ class Post < ApplicationRecord
     end
   end
 
-  def post_response
-    post = self.as_json(
+  def self.post_response(post, current_user)
+    post = post.to_xml(
         only: [:id, :post_title, :post_description, :datetime, :post_datetime, :is_post_public, :post_type, :location, :latitude, :longitude, :created_at, :updated_at],
         methods: [:likes_count, :comments_count, :post_members_counts],
+        :procs => Proc.new { |options, post|
+          options[:builder].tag!('liked_by_me',  Like.liked_by_me(post, current_user.profile_id))
+          options[:builder].tag!('is_favourite', Favourite.is_my_favourite(post, current_user.profile_id))
+          options[:builder].tag!('is_reported',  ReportPost.is_reported_by_me(post, current_user.profile_id))
+        },
         include: {
             member_profile: {
                 only: [:id, :photo, :country_id, :is_profile_public, :gender, :dob],
@@ -105,7 +110,7 @@ class Post < ApplicationRecord
             }
         }
     )
-    {post: post}.as_json
+    Hash.from_xml(post).as_json
   end
 
   def post_members_counts
@@ -141,7 +146,7 @@ class Post < ApplicationRecord
       profile = current_user.profile
       post = profile.posts.build(data[:post])
       if post.save
-        resp_data       = post.post_response
+        resp_data       = post_response(post, current_user)
         resp_status     = 1
         resp_message    = 'Post Created'
         resp_errors     = ''
@@ -234,7 +239,7 @@ class Post < ApplicationRecord
       data = data.with_indifferent_access
       post = Post.find_by_id(data[:post][:id])
       if post
-        resp_data    = post.post_response
+        resp_data    = post_response(post, current_user)
         resp_status  = 1
         resp_message = 'success'
         resp_errors  = ''
@@ -261,7 +266,7 @@ class Post < ApplicationRecord
       post = current_user.profile.posts.where(id: data[:post][:id]).try(:first)
       if post
         post.update_attributes(data[:post])
-        resp_data = post.post_response
+        resp_data = post_response(post, current_user)
         resp_status = 1
         resp_message = 'Updated Successfully'
         resp_errors = ''
@@ -629,6 +634,7 @@ class Post < ApplicationRecord
           comments_count:   post.comments.count,
           post_members_counts: post.post_members.count,
           liked_by_me: Like.liked_by_me(post, current_user.profile_id),
+          is_favourite: Favourite.is_my_favourite(post, current_user.profile_id),
           count: post.likes.where(is_like: true, is_deleted: false).count + post.comments.where(is_deleted: false).count,
           member_profile: {
               id:     member_profile.id,
@@ -690,6 +696,8 @@ class Post < ApplicationRecord
           methods: [:likes_count, :comments_count],
           :procs => Proc.new { |options, post|
             options[:builder].tag!('liked_by_me', Like.liked_by_me(post, profile.id))
+            options[:builder].tag!('is_favourite', Favourite.is_my_favourite(post, profile.id))
+            options[:builder].tag!('is_reported', ReportPost.is_reported_by_me(post, profile.id))
           },
           include: {
               member_profile: {
