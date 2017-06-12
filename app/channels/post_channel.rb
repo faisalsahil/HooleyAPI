@@ -48,7 +48,7 @@ class PostChannel < ApplicationCable::Channel
     elsif type == AppConstants::NEAR_ME
       response = Post.newly_created_nearest_posts(current_user, session_id, is_start_sync)
     elsif type == AppConstants::TRENDING
-      response = Post.newly_created_  trending_posts(current_user, session_id, is_start_sync)
+      response = Post.newly_created_trending_posts(current_user, session_id, is_start_sync)
     end
     PostJob.perform_later response, current_user.id, nil, type if response.present?
   end
