@@ -2,15 +2,9 @@ class Api::V1::FavouritesController < ApplicationController
   
   def add_to_favourite
     # params = {
-    #     "auth_token": UserSession.last.auth_token,
-    #     "favourites_attributes": [
-    #         {
-    #            "event_id": 1
-    #         },
-    #         {
-    #             "event_id": 2
-    #         }
-    #     ]
+    #   "auth_token": UserSession.last.auth_token,
+    #   "post_id": 1,
+    #   "is_favourite": true
     # }
     user_session = UserSession.find_by_auth_token(params[:auth_token])
     if user_session.present?

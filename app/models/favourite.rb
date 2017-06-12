@@ -16,18 +16,22 @@ class Favourite < ApplicationRecord
   def self.add_to_favourite(data, current_user)
     begin
       data = data.with_indifferent_access
-      member_profile = current_user.profile
-        member_profile.favourites.build(data[:favourites_attributes])
-      if member_profile.save
+      if not data[:is_favourite].present?
+          old_fav = Favourite.find_by_member_profile_id_and_post_id(current_user.profile_id, data[:post_id])
+          old_fav.destroy if old_fav.present?
+          resp_data       = {}
+          resp_errors     = ''
+          resp_status     = 1
+          resp_message    = 'Deleted successfully'
+          resp_errors     = ''
+      else
+        favourite = Favourite.find_by_member_profile_id_and_post_id(current_user.profile_id, data[:post_id]) || Favourite.new
+        favourite.member_profile_id = current_user.profile_id
+        favourite.post_id = data[:post_id]
+        favourite.save if favourite.new_record?
         resp_data       = {}
         resp_status     = 1
         resp_message    = 'success'
-        resp_errors     = ''
-      else
-        resp_data       = {}
-        resp_status     = 1
-        resp_message    = 'Favourite not added. something went wrong.'
-        resp_errors     = ''
       end
     rescue Exception => e
       resp_data       = {}
