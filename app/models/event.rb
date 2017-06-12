@@ -258,6 +258,7 @@ class Event < ApplicationRecord
 
         if data[:type].present? && data[:type] ==  AppConstants::LIKED
           posts = posts.order('post_likes_count DESC')
+          # posts = Post.joins(:likes).select("posts.*, COUNT('likes.id') likes_count").where(likes: {likable_type: 'Post', is_like: true}).group('posts.id').order('likes_count DESC')
         end
 
         if data[:type].present? && data[:type] ==  AppConstants::ALL
