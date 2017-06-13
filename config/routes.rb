@@ -85,7 +85,7 @@ Rails.application.routes.draw do
       resources :favourites, only: [] do
         collection do
           post :add_to_favourite
-          # get  :profile_favourites
+          get  :profile_favourites
         end
       end
       resources :report_posts, only:[:create]
