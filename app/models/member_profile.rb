@@ -395,7 +395,10 @@ class MemberProfile < ApplicationRecord
         posts = posts.where("created_at < ?", min_post_date)
       end
       
-      if data[:filter_type].present?
+      if data[:filter_type].present? && data[:filter_type] == 'favourite'
+        post_ids = profile.favourites.pluck(:post_id)
+        posts    = posts.where(id: post_ids)
+      elsif data[:filter_type].present?
         post_ids = posts.pluck(:id)
         posts = Post.joins(:post_attachments).where(id: post_ids, post_attachments: {attachment_type: data[:filter_type]})
       end

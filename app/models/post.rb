@@ -564,11 +564,11 @@ class Post < ApplicationRecord
       country_name = current_user.profile.try(:country).try(:country_name)
       if data[:search].present? && data[:search][:key].present?
         search_key = data[:search][:key]
-        posts      = Post.where("lower(post_title) like ? OR lower(post_description) like ?", "%#{search_key}%".downcase, "%#{search_key}%".downcase)
+        posts      = Post.where("(lower(post_title) like ? OR lower(post_description) like ?) AND is_deleted = false", "%#{search_key}%".downcase, "%#{search_key}%".downcase)
         hash_tags  = Hashtag.where("lower(name) like ?", "%#{search_key}%".downcase)
       elsif country_name.present?
         member_ids = MemberProfile.where(country_id: current_user.profile.country_id).pluck(:id)
-        posts      = Post.where(member_profile_id: member_ids)
+        posts      = Post.where(member_profile_id: member_ids, is_deleted: false)
         hash_tags  = Hashtag.where("lower(name) like ?", "%#{country_name}%".downcase)
       else
         posts      = Post.order("RANDOM()").order("created_at DESC")

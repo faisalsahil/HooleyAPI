@@ -246,7 +246,7 @@ class Event < ApplicationRecord
       member_profile = current_user.profile
       event          = Event.find_by_id(data[:event_id])
       if event.present?
-        posts   = event.posts
+        posts   = event.posts.where(is_deleted: false)
         if data[:type].present? && data[:type] ==  AppConstants::ME_MEDIA
           posts = posts.where(member_profile_id: current_user.profile_id)
         end
