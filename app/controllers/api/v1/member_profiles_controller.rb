@@ -17,15 +17,15 @@ class Api::V1::MemberProfilesController < ApplicationController
   end
   
   def profile_timeline
-    params = {
-        "auth_token": UserSession.last.auth_token,
-        # "min_post_date": "2017-03-22 07:51:56.783",
-        "member_profile_id": 12,
-        "filter_type": "favourite",
-        # "type": "near_me",
-        # "latitude":  "23.232323",
-        # "longitude": "23.2323223"
-    }
+    # params = {
+    #     "auth_token": UserSession.last.auth_token,
+    #     # "min_post_date": "2017-03-22 07:51:56.783",
+    #     "member_profile_id": 12,
+    #     "filter_type": "favourite",
+    #     # "type": "near_me",
+    #     # "latitude":  "23.232323",
+    #     # "longitude": "23.2323223"
+    # }
     user_session = UserSession.find_by_auth_token(params[:auth_token])
     if user_session.present?
       response = MemberProfile.profile_timeline(params, user_session.user)
