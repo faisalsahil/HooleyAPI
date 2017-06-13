@@ -104,19 +104,6 @@ class MemberProfile < ApplicationRecord
                     }
                 }
             },
-            recent_favourites: {
-                only: [:id, :created_at, :updated_at],
-                include: {
-                    event: {
-                        only: [:id, :event_name],
-                        include:{
-                            event_attachments: {
-                                only:[:id, :attachment_url, :thumbnail_url, :poster_skin]
-                            }
-                        }
-                    }
-                }
-            },
             country: {
                 only: [:id, :country_name]
             },
