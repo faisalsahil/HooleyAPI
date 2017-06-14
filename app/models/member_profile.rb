@@ -93,11 +93,11 @@ class MemberProfile < ApplicationRecord
 
   def member_profile(auth_token=nil)
     member_profile = self.as_json(
-        only: [:id, :photo, :country_id, :city_id, :is_profile_public, :gender, :dob, :high_school, :is_age_visible, :gender, :current_city, :home_town, :employer, :college, :high_school, :organization, :hobbies, :banner_image, :is_near_me_event_alert, :is_hooly_invite_alert, :is_my_upcoming_event_alert, :is_direct_message_alert, :is_contact_info_shown, :is_social_info_shown, :is_direct_message_allow, :is_private_media_share, :is_public_media_share, :near_event_search, :handler, :about, :linkden_link, :facebook_link, :flikker_link, :twitter_link, :instagram_link],
+        only: [:id, :photo, :country_id, :city_id, :is_profile_public, :gender, :dob, :high_school, :is_age_visible, :gender, :current_city, :home_town, :employer, :college, :high_school, :organization, :hobbies, :banner_image, :is_near_me_event_alert, :is_hooly_invite_alert, :is_my_upcoming_event_alert, :is_direct_message_alert, :is_contact_info_shown, :is_social_info_shown, :is_direct_message_allow, :is_private_media_share, :is_public_media_share, :near_event_search, :handler, :about, :linkden_link, :facebook_link, :flikker_link, :twitter_link, :instagram_link, :contact_phone, :contact_website, :contact_address],
         methods: [:posts_count, :followings_count, :followers_count, :profile_fil_attributes],
         include: {
             user: {
-                only: [:id, :profile_id, :profile_type, :first_name, :email, :last_name, :phone, :username],
+                only: [:id, :profile_id, :profile_type, :first_name, :email, :last_name, :username],
                 include:{
                     user_authentications:{
                         only:[:id, :social_site, :social_site_id, :social_site_token, :profile_image_url, :username, :email]
