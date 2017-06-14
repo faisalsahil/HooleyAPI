@@ -82,18 +82,18 @@ class MemberProfile < ApplicationRecord
   end
   
   def profile_fil_attributes
-    hash = self.attributes.slice('photo', 'about', 'handler', 'is_age_visible', 'gender', 'current_city', 'occupation_id', 'home_town', 'employer', 'college_major_id', 'college', 'high_school', 'organization', 'hobbies', 'relationship_status_id', 'political_view_id', 'religion_id', 'language_id', 'ethnic_background_id', 'contact_phone', 'contact_website', :'contact_address')
+    hash = self.attributes.slice('photo', 'about', 'handler', 'is_age_visible', 'gender', 'current_city', 'occupation_id', 'home_town', 'employer', 'college_major_id', 'college', 'high_school', 'organization', 'hobbies', 'relationship_status_id', 'political_view_id', 'religion_id', 'language_id', 'ethnic_background_id', 'contact_phone', 'contact_website', :'contact_address', 'linkden_link', 'facebook_link', 'flikker_link', 'twitter_link', 'instagram_link')
     hash.delete_if{|k,v| v.nil? || v.blank?}
     
     u = self.user.attributes.slice('first_name', 'last_name')
     u = u.delete_if{|k,v| v.nil?}
 
-    hash.count + self.user.user_authentications.count + u.count
+    hash.count + u.count
   end
 
   def member_profile(auth_token=nil)
     member_profile = self.as_json(
-        only: [:id, :photo, :country_id, :city_id, :is_profile_public, :gender, :dob, :high_school, :is_age_visible, :gender, :current_city, :home_town, :employer, :college, :high_school, :organization, :hobbies, :banner_image, :is_near_me_event_alert, :is_hooly_invite_alert, :is_my_upcoming_event_alert, :is_direct_message_alert, :is_contact_info_shown, :is_social_info_shown, :is_direct_message_allow, :is_private_media_share, :is_public_media_share, :near_event_search, :handler, :about],
+        only: [:id, :photo, :country_id, :city_id, :is_profile_public, :gender, :dob, :high_school, :is_age_visible, :gender, :current_city, :home_town, :employer, :college, :high_school, :organization, :hobbies, :banner_image, :is_near_me_event_alert, :is_hooly_invite_alert, :is_my_upcoming_event_alert, :is_direct_message_alert, :is_contact_info_shown, :is_social_info_shown, :is_direct_message_allow, :is_private_media_share, :is_public_media_share, :near_event_search, :handler, :about, :linkden_link, :facebook_link, :flikker_link, :twitter_link, :instagram_link],
         methods: [:posts_count, :followings_count, :followers_count, :profile_fil_attributes],
         include: {
             user: {
