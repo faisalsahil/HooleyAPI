@@ -526,6 +526,7 @@ class Event < ApplicationRecord
 
   def self.events_response(events, current_user, sync_token=nil)
     if events.present?
+      # events = events.includes(:event_attachments, :event_co_hosts, :hashtags, :event_members)
       events = events.to_xml(
           only:[:id, :event_name, :member_profile_id, :location, :latitude, :longitude, :radius, :event_details, :is_friends_allowed, :is_public, :is_paid, :category_id, :event_type, :start_date, :end_date, :created_at, :updated_at, :custom_event, :message_from_host, :is_deleted],
           methods:[:post_count],
@@ -533,6 +534,51 @@ class Event < ApplicationRecord
             options[:builder].tag!('is_bookmarked',   EventBookmark.is_bookmarked(event, current_user.profile_id))
             options[:builder].tag!('is_registered',   EventMember.is_registered(event, current_user.profile_id))
             options[:builder].tag!('visiting_status', EventMember.visiting_status(event, current_user.profile_id))
+          },
+          include:{
+              member_profile:{
+                  only: [:id, :photo],
+                  include:{
+                      user:{
+                          only: [:id, :first_name, :last_name, :email]
+                      }
+                  }
+              },
+              category:{
+                  only:[:id, :name]
+              },
+              event_attachments:{
+                  only:[:id, :event_id, :attachment_type, :message, :attachment_url, :thumbnail_url, :poster_skin]
+              },
+              event_co_hosts:{
+                  only:[:id, :event_id, :member_profile_id],
+                  include:{
+                      member_profile: {
+                          only: [:id, :photo],
+                          include: {
+                              user: {
+                                  only: [:id, :first_name, :last_name]
+                              }
+                          }
+                      }
+                  }
+              },
+              hashtags:{
+                  only:[:id, :name]
+              },
+              event_members:{
+                  only: [:id],
+                  include:{
+                      member_profile: {
+                          only: [:id, :photo],
+                          include: {
+                              user: {
+                                  only: [:id, :first_name, :last_name]
+                              }
+                          }
+                      }
+                  }
+              }
           }
       )
       if sync_token.present?
