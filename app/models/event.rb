@@ -149,26 +149,32 @@ class Event < ApplicationRecord
       per_page = (data[:per_page] || @@limit).to_i
       page     = (data[:page] || 1).to_i
       
-      # events   = Event.where(is_public: true)
       events = Event.where('member_profile_id = ? OR is_public = ?', current_user.profile_id, true)
       if data[:type].present? && data[:type] == AppConstants::SEARCH
         events  = search_event_list(data)
       elsif data[:type].present? && data[:type] == AppConstants::UPCOMING && data[:list_type] == AppConstants::DAY
-        events  = events.where('Date(start_date) = ?',  Date.today)
+        # events  = events.where('Date(start_date) = ?',  Date.today)
+        events = events.where('start_date::date <= ? AND end_date::date >= ?', Date.today, Date.today)
       elsif data[:type].present? && data[:type] == AppConstants::UPCOMING && data[:list_type] == AppConstants::NP_DAY
-        events  = events.where('Date(start_date) = ?',  Date.today + 1.day)
+        # events  = events.where('Date(start_date) = ?',  Date.today + 1.day)
+        events = events.where('start_date::date <= ? AND end_date::date >= ?', Date.today + 1.day, Date.today + 1.day)
       elsif data[:type].present? && data[:type] == AppConstants::UPCOMING && data[:list_type] == AppConstants::WEEK
-        events  = events.where('Date(start_date) > ? AND Date(start_date) <= ?', Date.today + 1.day, Date.today + 1.week)
+        # events  = events.where('Date(start_date) > ? AND Date(start_date) <= ?', Date.today + 1.day, Date.today + 1.week)
+        events = events.where('(end_date::date > ? AND end_date::date <= ?) OR (start_date::date < ? AND end_date::date > ?) OR (start_date::date BETWEEN ? AND ? AND end_date::date <= ?) OR (start_date::date BETWEEN ? AND ? AND end_date::date > ?)', Date.today + 1.day, Date.today + 1.week, Date.today + 1.day, Date.today + 1.week, Date.today + 1.day, Date.today + 1.week, Date.today + 1.week, Date.today + 1.day, Date.today + 1.week, Date.today + 1.week)
       elsif data[:type].present? && data[:type] == AppConstants::UPCOMING && data[:list_type] == AppConstants::ALL
-        events  = events.where('Date(start_date) > ?', Date.today + 1.week)
+        events  = events.where('end_date::date > ?', Date.today + 1.week)
       elsif data[:type].present? && data[:type] == AppConstants::PAST && data[:list_type] == AppConstants::DAY
-        events  = events.where('Date(start_date) = ?',  Date.today - 1.day)
+        # events  = events.where('Date(start_date) = ?',  Date.today - 1.day)
+        events  = events.where('end_date::date = ?', Date.today - 1.day)
       elsif data[:type].present? && data[:type] == AppConstants::PAST && data[:list_type] == AppConstants::NP_DAY
-        events  = events.where('Date(start_date) = ?',  Date.today - 2.day)
+        # events  = events.where('Date(start_date) = ?',  Date.today - 2.day)
+        events  = events.where('end_date::date = ?',  Date.today - 2.day)
       elsif data[:type].present? && data[:type] == AppConstants::PAST && data[:list_type] == AppConstants::WEEK
-        events  = events.where('Date(start_date) >= ? AND Date(start_date) < ?', Date.today - 1.week, Date.today - 2.day)
+        # events  = events.where('Date(start_date) >= ? AND Date(start_date) < ?', Date.today - 1.week, Date.today - 2.day)
+        events  = events.where('end_date::date >= ? AND end_date::date < ?', Date.today - 1.week, Date.today - 2.day)
       elsif data[:type].present? && data[:type] == AppConstants::PAST && data[:list_type] == AppConstants::ALL
-        events  = events.where('Date(start_date) < ?', Date.today - 1.week)
+        # events  = events.where('Date(start_date) < ?', Date.today - 1.week)
+        events  = events.where('end_date::date < ?', Date.today - 1.week)
       end
 
       #===============   Filter events here  ===========================
@@ -178,10 +184,6 @@ class Event < ApplicationRecord
 
       if data[:filter_type].present? && data[:filter_type] == AppConstants::BOOKMARK
         events = events.joins(:event_bookmarks).where(event_bookmarks: {member_profile_id: current_user.profile_id, is_bookmark: true})
-      end
-
-      if data[:filter_type].present? && data[:filter_type] == AppConstants::ALL
-        events    =  Event.where(is_public: true)
       end
 
       if data[:keyword].present?
@@ -210,7 +212,6 @@ class Event < ApplicationRecord
 
   def self.search_event_list(data)
     if data[:keyword].present?
-      # events = Event.search_by_title(data[:keyword])
       events = Event.where('lower(event_name) like ? OR lower(event_details) like ?', "%#{data[:keyword]}%".downcase, "%#{data[:keyword]}%".downcase)
       events = events.where(is_public: true)
     end
@@ -532,51 +533,6 @@ class Event < ApplicationRecord
             options[:builder].tag!('is_bookmarked',   EventBookmark.is_bookmarked(event, current_user.profile_id))
             options[:builder].tag!('is_registered',   EventMember.is_registered(event, current_user.profile_id))
             options[:builder].tag!('visiting_status', EventMember.visiting_status(event, current_user.profile_id))
-          },
-          include:{
-              member_profile:{
-                  only: [:id, :photo],
-                  include:{
-                      user:{
-                          only: [:id, :first_name, :last_name, :email]
-                      }
-                  }
-              },
-              category:{
-                  only:[:id, :name]
-              },
-              event_attachments:{
-                  only:[:id, :event_id, :attachment_type, :message, :attachment_url, :thumbnail_url, :poster_skin]
-              },
-              event_co_hosts:{
-                  only:[:id, :event_id, :member_profile_id],
-                  include:{
-                      member_profile: {
-                          only: [:id, :photo],
-                          include: {
-                              user: {
-                                  only: [:id, :first_name, :last_name]
-                              }
-                          }
-                      }
-                  }
-              },
-              hashtags:{
-                  only:[:id, :name]
-              },
-              event_members:{
-                  only: [:id],
-                  include:{
-                      member_profile: {
-                          only: [:id, :photo],
-                          include: {
-                              user: {
-                                  only: [:id, :first_name, :last_name]
-                              }
-                          }
-                      }
-                  }
-              }
           }
       )
       if sync_token.present?

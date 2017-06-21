@@ -81,7 +81,7 @@ class MemberProfile < ApplicationRecord
     end
   end
   
-    def profile_fil_attributes
+  def profile_fil_attributes
     hash = self.attributes.slice('photo', 'about', 'handler', 'is_age_visible', 'gender', 'current_city', 'occupation_id', 'home_town', 'employer', 'college_major_id', 'college', 'high_school', 'organization', 'hobbies', 'relationship_status_id', 'political_view_id', 'religion_id', 'language_id', 'ethnic_background_id', 'contact_phone', 'contact_website', 'contact_address', 'linkden_link', 'facebook_link', 'flikker_link', 'twitter_link', 'instagram_link')
     hash.delete_if{|k,v| v.nil? || v.blank?}
     

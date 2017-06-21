@@ -3,66 +3,66 @@ class Api::V1::EventsController < ApplicationController
   
   def event_list_horizontal
     # params = {
-    #     "auth_token": "111111111",
+    #     "auth_token": "11234566543",
     #     "type": 'upcoming',
     #     "page": 1,
     #     "per_page": 10,
     #     "list_type": 'day',
-    #     "filter_type": 'invited/registered/bookmarked'
+    #     # "filter_type": 'invited/registered/bookmarked'
     # }
     
     # params = {
-    #     "auth_token": "111111111",
+    #     "auth_token": "11234566543",
     #     "type": 'upcoming',
     #     "page": 1,
     #     "per_page": 10,
     #     "list_type": 'np_day',
-    #     "filter_type": 'invited/bookmarked',
+    #     # "filter_type": 'invited/bookmarked',
     # }
-    #
+    
     # params = {
-    #     "auth_token": "111111111",
+    #     "auth_token": "11234566543",
     #     "type": 'upcoming',
     #     "page": 1,
     #     "per_page": 10,
     #     "list_type": 'week',
-    #     "filter_type": 'invited/bookmarked'
+    #     # "filter_type": 'invited/bookmarked'
     # }
 
     # params = {
-    #     "auth_token": "111111111",
+    #     "auth_token": "11234566543",
     #     "type": 'upcoming',
     #     "page": 1,
     #     "per_page": 10,
     #     "list_type": 'all',
-    #     "filter_type": 'invited/bookmarked'
+    #     # "filter_type": 'invited/bookmarked'
     # }
     
     # params = {
-    #     "auth_token": "111111111",
+    #     "auth_token": "11234566543",
     #     "type": 'past',
-    #     "page": 2,
+    #     "page": 1,
     #     "per_page": 10,
     #     "list_type": 'day',
-    #     "filter_type": 'invited/bookmarked'
+    #     # "filter_type": 'invited/bookmarked'
     # }
 
     # params = {
-    #     "auth_token": "111111111",
+    #     "auth_token": "11234566543",
     #     "type": 'past',
     #     "page": 1,
     #     "per_page": 10,
     #     "list_type": 'np_day',
-    #     "filter_type": 'invited/bookmarked'
+    #     # "filter_type": 'invited/bookmarked'
     # }
 
     # params = {
-    #     "auth_token": "111111111",
+    #     "auth_token": "11234566543",
     #     "type": 'past',
     #     "page": 1,
     #     "per_page": 10,
     #     "list_type": 'week',
-    #     "filter_type": 'invited/bookmarked'
+    #     # "filter_type": 'invited/bookmarked'
     # }
 
     # params = {
@@ -122,7 +122,7 @@ class Api::V1::EventsController < ApplicationController
   
   def event_register
     # params = {
-    #   "auth_token": UserSession.last.auth_token,
+    #   "auth_token": "11234566543",
     #   "event_id": 31,
     # }
     user_session = UserSession.find_by_auth_token(params[:auth_token])
@@ -224,7 +224,7 @@ class Api::V1::EventsController < ApplicationController
   
   def event_add_members
     # params = {
-    #   "auth_token": UserSession.last.auth_token,
+    #   "auth_token": "11234566543",
     #   "event": {
     #       "id": 31,
     #       "event_members_attributes":[

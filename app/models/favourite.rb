@@ -60,10 +60,10 @@ class Favourite < ApplicationRecord
         posts = posts.where("created_at < ?", min_post_date)
       end
     
-      if data[:filter_type].present?
-        post_ids = posts.pluck(:id)
-        posts = Post.joins(:post_attachments).where(id: post_ids, post_attachments: {attachment_type: data[:filter_type]})
-      end
+      # if data[:filter_type].present?
+      #   post_ids = posts.pluck(:id)
+      #   posts = Post.joins(:post_attachments).where(id: post_ids, post_attachments: {attachment_type: data[:filter_type]})
+      # end
     
       posts = posts.order("created_at DESC")
       posts = posts.limit(@@limit)
