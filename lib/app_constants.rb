@@ -10,6 +10,8 @@ module AppConstants
   PENDING           = 'pending'
   REJECTED          = 'rejected'
   TIMELINE          =  'TimeLine'
+  CHRONOLOGICAL     = 'chronological'
+  A2Z               = 'a2z'
   
   SEARCH   = 'search'
   UPCOMING = 'upcoming'

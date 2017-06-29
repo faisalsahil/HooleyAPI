@@ -15,8 +15,6 @@ gem 'apipie-rails', " 0.3.3"
 
 gem 'bcrypt', '~> 3.1.7'
 
-# gem 'cancancan'
-
 gem 'coffee-rails', '~> 4.1.0'
 
 gem 'devise'
@@ -47,7 +45,6 @@ gem 'pg_search'
 
 gem 'puma', '~> 3.0'
 
-# gem 'rails', '>= 5.0.0.beta4', '< 5.1'
 gem 'rails', '~> 5.0'
 
 gem 'rails-push-notifications', '~> 0.2.0'

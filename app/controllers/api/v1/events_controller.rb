@@ -181,13 +181,16 @@ class Api::V1::EventsController < ApplicationController
   
   def event_guests
     # params = {
-    #   "auth_token": "111111111",
-    #   "per_page":10,
-    #   "page":1,
-    #   "event_id": 13,
+    #   "auth_token": UserSession.last.auth_token,
+    #   "per_page":3,
+    #   "page":4,
+    #   "event_id": 40,
     #   "type": "registered",
     #   # "type": "registered/on_way/here_now/gone/",
+    #   # "sort_by": "chronological/a2z",
+    #   # "sort_by": "a2z",
     #   # "filter_type": "male",
+    #   # "filter_type2": "friends"
     #   # "search_key": "faisal"
     # }
     user_session = UserSession.find_by_auth_token(params[:auth_token])
@@ -239,6 +242,21 @@ class Api::V1::EventsController < ApplicationController
     user_session = UserSession.find_by_auth_token(params[:auth_token])
     if user_session.present?
       response = Event.event_add_members(params, user_session.user)
+      render json: response
+    else
+      resp_data = {resp_data: {}, resp_status: 0, resp_message: 'Invalid Token', resp_error: 'error'}.as_json
+      return render json: resp_data
+    end
+  end
+  
+  def delete_event
+    # params = {
+    #   "auth_token": UserSession.last.auth_token,
+    #   "event_id": 49
+    # }
+    user_session = UserSession.find_by_auth_token(params[:auth_token])
+    if user_session.present?
+      response = Event.delete_event(params, user_session.user)
       render json: response
     else
       resp_data = {resp_data: {}, resp_status: 0, resp_message: 'Invalid Token', resp_error: 'error'}.as_json

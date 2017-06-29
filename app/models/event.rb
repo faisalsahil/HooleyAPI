@@ -43,41 +43,46 @@ class Event < ApplicationRecord
       sync_event_id = 0
       data    = data.with_indifferent_access
       profile = current_user.profile
-      event   = profile.events.build(data[:event])
-      if event.save
-        # creating hashtags for event
-        data[:hash_tags] && data[:hash_tags].each do |tag|
-          hash_tag = Hashtag.find_by_name(tag[:tag_name])
-          if hash_tag.present?
-            hash_tag.count = hash_tag.count + 1
-            hash_tag.save!
-          else
-            hash_tag = Hashtag.create name: tag[:tag_name]
-          end
-          event_hash_tag = EventHashTag.find_by_event_id_and_hashtag_id(event.id, hash_tag.id)
-          if not event_hash_tag.present?
-            event_hash_tag            = event.event_hash_tags.build
-            event_hash_tag.hashtag_id = hash_tag.id
-            event_hash_tag.save
-          end
-        end
-        # creating event members
-        event.event_members.each do |member|
-          member.is_invited = true
-          member.save
-        end
-        
-        sync_event_id   = event.id
-        resp_data       = events_response(event, current_user)
-        resp_status     = 1
-        resp_message    = 'Event Created'
-        resp_errors     = ''
+      
+      if data[:event][:id].present?
+        event = profile.events.find_by_id(data[:event][:id])
       else
-        resp_data       = {}
-        resp_status     = 0
-        resp_message    = 'Errors'
-        resp_errors     = event.errors.messages
+        event = profile.events.build(data[:event])
       end
+      
+      if event.new_record?
+        event.save
+      else
+        event.update_attributes(data[:event])
+      end
+      
+      # creating hashtags for event
+      data[:hash_tags] && data[:hash_tags].each do |tag|
+        hash_tag = Hashtag.find_by_name(tag[:tag_name])
+        if hash_tag.present?
+          hash_tag.count = hash_tag.count + 1
+          hash_tag.save!
+        else
+          hash_tag = Hashtag.create name: tag[:tag_name]
+        end
+        event_hash_tag = EventHashTag.find_by_event_id_and_hashtag_id(event.id, hash_tag.id)
+        if not event_hash_tag.present?
+          event_hash_tag            = event.event_hash_tags.build
+          event_hash_tag.hashtag_id = hash_tag.id
+          event_hash_tag.save
+        end
+      end
+      # creating event members
+      event.event_members.each do |member|
+        member.is_invited = true
+        member.save
+      end
+      
+      sync_event_id   = event.id
+      resp_data       = events_response(event, current_user)
+      resp_status     = 1
+      resp_message    = 'Event Created'
+      resp_errors     = ''
     rescue Exception => e
       resp_data       = {}
       resp_status     = 0
@@ -87,7 +92,7 @@ class Event < ApplicationRecord
     end
     resp_request_id = data[:request_id]
     response = JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
-    [response, sync_event_id, data[:is_all_invited]]
+    [response, sync_event_id, data[:is_all_invited], resp_status]
   end
   
   def self.show_event(data, current_user)
@@ -149,7 +154,7 @@ class Event < ApplicationRecord
       per_page = (data[:per_page] || @@limit).to_i
       page     = (data[:page] || 1).to_i
       
-      events = Event.where('member_profile_id = ? OR is_public = ?', current_user.profile_id, true)
+      events = Event.where('member_profile_id = ? OR is_public = ?', current_user.profile_id, true, is_deleted: false)
       if data[:type].present? && data[:type] == AppConstants::SEARCH
         events  = search_event_list(data)
       elsif data[:type].present? && data[:type] == AppConstants::UPCOMING && data[:list_type] == AppConstants::DAY
@@ -212,7 +217,7 @@ class Event < ApplicationRecord
 
   def self.search_event_list(data)
     if data[:keyword].present?
-      events = Event.where('lower(event_name) like ? OR lower(event_details) like ?', "%#{data[:keyword]}%".downcase, "%#{data[:keyword]}%".downcase)
+      events = Event.where('(lower(event_name) like ? OR lower(event_details) like ?) AND is_public = true AND is_deleted = false', "%#{data[:keyword]}%".downcase, "%#{data[:keyword]}%".downcase)
       events = events.where(is_public: true)
     end
     if data[:date].present?
@@ -321,11 +326,11 @@ class Event < ApplicationRecord
         if member_profile.id == current_user.profile_id
           # event_ids= EventMember.where(member_profile_id: member_profile.id).pluck(:event_id)
           # events   = Event.where('member_profile_id = ? OR id IN(?)', member_profile.id, event_ids)
-          events = member_profile.events
+          events = member_profile.events.where(is_deleted: false)
         else
           # event_ids = EventMember.where(member_profile_id: member_profile.id).pluck(:event_id)
           # events    = Event.where('(member_profile_id = ? OR id IN(?)) AND is_public = ?', member_profile.id, event_ids, true)
-          events = member_profile.events.where(is_public: true)
+          events = member_profile.events.where(is_public: true, is_deleted: false)
         end
         
         if data[:search_key].present?
@@ -378,22 +383,51 @@ class Event < ApplicationRecord
         event_members  = event_members.where(visiting_status: AppConstants::GONE)
       end
       
+      if data[:sort_by].present? && data[:sort_by] == AppConstants::CHRONOLOGICAL
+        event_members  = event_members.order('updated_at DESC')
+      end
+
       profile_ids     = event_members.pluck(:member_profile_id)
       member_profiles = MemberProfile.where(id: profile_ids)
 
       if data[:search_key].present?
-        # profile_ids = member_profiles.pluck(:id)
         users = User.where(profile_id: profile_ids)
         profile_ids = users.where('lower(first_name) like ? OR lower(last_name) like ? OR email like ? OR lower(username) like ? ', "%#{data[:search_key]}%".downcase, "%#{data[:search_key]}%".downcase, "%#{data[:search_key]}%".downcase, "%#{data[:search_key]}%".downcase).pluck(:profile_id)
         member_profiles  = MemberProfile.where(id: profile_ids)
       end
       
-      if data[:filter_type].present? &&  data[:filter_type]
-        member_profiles = member_profiles.where(gender: data[:filter_type])
+      if data[:filter_type].present?
+        member_profiles   = member_profiles.where(gender: data[:filter_type])
       end
       
-      member_profiles  =  member_profiles.page(page.to_i).per_page(per_page.to_i)
-      paging_data      =  JsonBuilder.get_paging_data(page, per_page, member_profiles)
+      if data[:filter_type2].present? && data[:filter_type2] == 'friends'
+        member_following_ids = MemberFollowing.where(member_profile_id: current_user.profile_id, following_status: AppConstants::ACCEPTED, is_deleted: false).pluck(:following_profile_id)
+        member_profiles = member_profiles.where(id: member_following_ids)
+      end
+      
+      if data[:sort_by].present? && data[:sort_by] == AppConstants::A2Z
+        users = User.where(profile_id: profile_ids, profile_type: AppConstants::MEMBER).sort_by{ |t| [t.first_name, t.last_name] }
+        ids = users.pluck(:profile_id)
+        member_profiles = MemberProfile.where(id: ids).sort_by { |u| ids.index(u.id) }
+      else
+        member_profiles = member_profiles.sort_by { |u| profile_ids.index(u.id) }
+      end
+      total_records = member_profiles.count
+      start_index = page.to_i * per_page.to_i - per_page.to_i
+      end_index   = page.to_i * per_page.to_i - 1
+      member_profiles  =  member_profiles[start_index .. end_index]
+
+      total_pages     = (total_records.to_f/per_page).ceil
+      next_page_exist = page < total_pages ? true : false
+      previous_page_exist = page > 1 ? true : false
+      paging_data =  {
+          "page": page,
+          "per_page": per_page,
+          "total_records": total_records,
+          "total_pages": total_pages,
+          "next_page_exist": next_page_exist,
+          "previous_page_exist": previous_page_exist
+      }
       if member_profiles.present?
         member_profiles  =  member_profiles.to_xml(
            only: [:id, :photo, :contact_address, :dob],
@@ -638,6 +672,29 @@ class Event < ApplicationRecord
       resp_message    = 'error'
       resp_errors     = e
     end
+  end
+  
+  def self.delete_event(data, current_user)
+    begin
+      event = Event.find_by_id_and_member_profile_id(data[:event_id], current_user.profile_id)
+      if event.present?
+        event.is_deleted = true
+        event.save!
+      end
+      
+      resp_data       = {}
+      resp_status     = 1
+      resp_message    = 'success'
+      resp_errors     = ''
+    rescue Exception => e
+      resp_data       = {}
+      resp_status     = 0
+      resp_message    = 'error'
+      resp_errors     = e
+    end
+    resp_request_id = ''
+    resp_request_id = data[:request_id] if data[:request_id].present?
+    JsonBuilder.json_builder(resp_data, resp_status, resp_message, resp_request_id, errors: resp_errors)
   end
 end
 
