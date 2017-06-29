@@ -154,7 +154,7 @@ class Event < ApplicationRecord
       per_page = (data[:per_page] || @@limit).to_i
       page     = (data[:page] || 1).to_i
       
-      events = Event.where('member_profile_id = ? OR is_public = ?', current_user.profile_id, true, is_deleted: false)
+      events = Event.where('(member_profile_id = ? OR is_public = ? ) AND is_deleted = false', current_user.profile_id, true)
       if data[:type].present? && data[:type] == AppConstants::SEARCH
         events  = search_event_list(data)
       elsif data[:type].present? && data[:type] == AppConstants::UPCOMING && data[:list_type] == AppConstants::DAY
