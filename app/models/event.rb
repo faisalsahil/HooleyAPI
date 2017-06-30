@@ -53,6 +53,8 @@ class Event < ApplicationRecord
       if event.new_record?
         event.save
       else
+        event.event_hash_tags.destroy_all
+        event.event_co_hosts.destroy_all
         event.event_members.destroy_all
         event.update_attributes(data[:event])
       end
