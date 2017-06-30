@@ -53,6 +53,7 @@ class Event < ApplicationRecord
       if event.new_record?
         event.save
       else
+        event.event_members.destroy_all
         event.update_attributes(data[:event])
       end
       
@@ -412,7 +413,10 @@ class Event < ApplicationRecord
       else
         member_profiles = member_profiles.sort_by { |u| profile_ids.index(u.id) }
       end
+      
+      
       total_records = member_profiles.count
+      
       start_index = page.to_i * per_page.to_i - per_page.to_i
       end_index   = page.to_i * per_page.to_i - 1
       member_profiles  =  member_profiles[start_index .. end_index]
@@ -420,6 +424,7 @@ class Event < ApplicationRecord
       total_pages     = (total_records.to_f/per_page).ceil
       next_page_exist = page < total_pages ? true : false
       previous_page_exist = page > 1 ? true : false
+      
       paging_data =  {
           "page": page,
           "per_page": per_page,
@@ -428,6 +433,7 @@ class Event < ApplicationRecord
           "next_page_exist": next_page_exist,
           "previous_page_exist": previous_page_exist
       }
+     
       if member_profiles.present?
         member_profiles  =  member_profiles.to_xml(
            only: [:id, :photo, :contact_address, :dob],
