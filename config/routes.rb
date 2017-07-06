@@ -1,5 +1,7 @@
 Rails.application.routes.draw do
 
+  get 'events/show'
+
   devise_for :users
 
   resources :users, only:[] do
@@ -7,6 +9,7 @@ Rails.application.routes.draw do
       get 'activation'
     end
   end
+  resources :events, only:[:show]
   apipie
   # root to: 'apipie/apipies#index'
   root to: 'dashboards#index'

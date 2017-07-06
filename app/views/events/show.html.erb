@@ -1,0 +1,56 @@
+
+<!DOCTYPE html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title><%= @event.event_name %></title>
+  <meta property="og:site_name" content="Hooley">
+  <meta property="og:title" content='<%= "#{@user.username}"%>' />
+  <meta property="og:description" content='<%= "#{@event.event_name}"%>' />
+  <meta property="og:image" itemprop="image" content='<%= "#{@event.event_attachments.first.attachment_url}" %>'>
+  <meta property="og:type" content="website" />
+
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:site" content="Hooley">
+  <meta property="twitter:title" content="Hooley">
+
+  <!- <link href="/favicon.ico" type="image/x-icon" rel="icon" /><link href="/favicon.ico" type="image/x-icon" rel="shortcut icon" />
+  <%= stylesheet_link_tag 'stylesheet'%>
+</head>
+<body>
+  <div class="HooleyHeaderWrapper">
+    <div class="HooleyHeader">
+      <div class="HooleyLogo">
+        <img src="/assets/hooley-logo.png" alt="" />
+        <h1 class="HooleyName">HOOLEY</h1>
+        <p class="HooleyNameDetail">Find It for free on the App Store.</p>
+      </div>
+      <a class="GetBotton" href="javascript:void(0);">GET</a>
+    </div>
+  </div>
+  <% if @event.present? %>
+    <div class="openinappWrapper">
+       <a class="openinapp" href="javascript:void(0);">
+         <span>OPEN</span> IN APP
+       </a>
+    </div>
+    <div class="bodyText">
+      <ul class="FriendList">
+        <li>
+          <div class="PhotoWrapper">
+              <img rel="nofollow" src='<%= "#{@profile.photo}" %>' alt="" />
+          </div>
+          <div class="UserNameText">
+            <h1><%= @user.username || "#{@user.first_name} #{@user.last_name}" %></span></h1>
+            <h2><%= @event.event_name %></h2>
+            <h3><%= @event.start_date.to_date %></h3>
+          </div>
+        </li>
+      </ul>
+      <div style="width: 88vw; max-width:800px; margin:0 auto;"><img  style="width: 100%;" src='<%= "#{@event.event_attachments.first.attachment_url}" %>' /></div>
+      <div class="VoteCounte">0<span>Votes</span></div>
+    </div>
+  <% else %>
+    <div style="text-align: center;font-size: 38px;"><h1>Event Not Found</h1></div>
+  <% end %>
+</body>
+</html>
